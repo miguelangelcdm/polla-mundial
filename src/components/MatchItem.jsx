@@ -15,8 +15,10 @@ export default function MatchItem({ partido, pred = { goles_local: '', goles_vis
   return (
     <Card 
       variant={partidoCerrado ? undefined : "glow-blue"}
-      className={`p-4 transition-all duration-300 relative overflow-hidden ${
-        partidoCerrado ? 'border-gh-border/50 bg-[#020813]/20' : 'bg-[#081122]/30'
+      className={`p-4 transition-all duration-300 relative overflow-hidden transition-theme ${
+        partidoCerrado 
+          ? 'border-gh-border/50 bg-[#020813]/20' 
+          : 'bg-[#081122]/30 hover:scale-[1.01] hover:border-wc-purple/40 hover:shadow-lg'
       }`}
     >
       {/* Sello de Estado Cerrado */}
@@ -63,32 +65,88 @@ export default function MatchItem({ partido, pred = { goles_local: '', goles_vis
         {/* Inputs de Predicción */}
         <div className="md:col-span-2 flex items-center justify-center gap-4">
           {partido.confirmado ? (
-            <div className="flex items-center gap-2">
-              <Input 
-                type="number"
-                min="0"
-                disabled={partidoCerrado}
-                value={pred.goles_local}
-                onChange={(e) => {
-                  const val = e.target.value === '' ? '' : parseInt(e.target.value);
-                  onChangePrediction(partido.id, 'goles_local', val);
-                }}
-                placeholder="-"
-                className="w-12 h-10 text-center text-lg font-bold rounded-lg border border-gh-border focus-visible:border-wc-purple"
-              />
+            <div className="flex items-center gap-3">
+              {/* Local Goals Tactile Control */}
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  disabled={partidoCerrado}
+                  onClick={() => {
+                    const val = pred.goles_local === '' ? 0 : Math.max(0, parseInt(pred.goles_local) - 1);
+                    onChangePrediction(partido.id, 'goles_local', val);
+                  }}
+                  className="w-7 h-7 flex items-center justify-center bg-black/10 dark:bg-white/5 border border-gh-border rounded-full hover:bg-wc-purple hover:text-white transition-all text-sm font-bold disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-inherit cursor-pointer select-none"
+                  aria-label="Disminuir goles local"
+                >
+                  -
+                </button>
+                <Input 
+                  type="number"
+                  min="0"
+                  disabled={partidoCerrado}
+                  value={pred.goles_local}
+                  onChange={(e) => {
+                    const val = e.target.value === '' ? '' : parseInt(e.target.value);
+                    onChangePrediction(partido.id, 'goles_local', val);
+                  }}
+                  placeholder="-"
+                  className="w-10 h-10 text-center text-base font-extrabold rounded-lg border border-gh-border focus-visible:border-wc-purple p-0 select-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                />
+                <button
+                  type="button"
+                  disabled={partidoCerrado}
+                  onClick={() => {
+                    const val = pred.goles_local === '' ? 1 : parseInt(pred.goles_local) + 1;
+                    onChangePrediction(partido.id, 'goles_local', val);
+                  }}
+                  className="w-7 h-7 flex items-center justify-center bg-black/10 dark:bg-white/5 border border-gh-border rounded-full hover:bg-wc-purple hover:text-white transition-all text-sm font-bold disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-inherit cursor-pointer select-none"
+                  aria-label="Aumentar goles local"
+                >
+                  +
+                </button>
+              </div>
+
               <span className="text-gh-text-muted font-bold">-</span>
-              <Input 
-                type="number"
-                min="0"
-                disabled={partidoCerrado}
-                value={pred.goles_visita}
-                onChange={(e) => {
-                  const val = e.target.value === '' ? '' : parseInt(e.target.value);
-                  onChangePrediction(partido.id, 'goles_visita', val);
-                }}
-                placeholder="-"
-                className="w-12 h-10 text-center text-lg font-bold rounded-lg border border-gh-border focus-visible:border-wc-purple"
-              />
+
+              {/* Visita Goals Tactile Control */}
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  disabled={partidoCerrado}
+                  onClick={() => {
+                    const val = pred.goles_visita === '' ? 0 : Math.max(0, parseInt(pred.goles_visita) - 1);
+                    onChangePrediction(partido.id, 'goles_visita', val);
+                  }}
+                  className="w-7 h-7 flex items-center justify-center bg-black/10 dark:bg-white/5 border border-gh-border rounded-full hover:bg-wc-purple hover:text-white transition-all text-sm font-bold disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-inherit cursor-pointer select-none"
+                  aria-label="Disminuir goles visita"
+                >
+                  -
+                </button>
+                <Input 
+                  type="number"
+                  min="0"
+                  disabled={partidoCerrado}
+                  value={pred.goles_visita}
+                  onChange={(e) => {
+                    const val = e.target.value === '' ? '' : parseInt(e.target.value);
+                    onChangePrediction(partido.id, 'goles_visita', val);
+                  }}
+                  placeholder="-"
+                  className="w-10 h-10 text-center text-base font-extrabold rounded-lg border border-gh-border focus-visible:border-wc-purple p-0 select-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                />
+                <button
+                  type="button"
+                  disabled={partidoCerrado}
+                  onClick={() => {
+                    const val = pred.goles_visita === '' ? 1 : parseInt(pred.goles_visita) + 1;
+                    onChangePrediction(partido.id, 'goles_visita', val);
+                  }}
+                  className="w-7 h-7 flex items-center justify-center bg-black/10 dark:bg-white/5 border border-gh-border rounded-full hover:bg-wc-purple hover:text-white transition-all text-sm font-bold disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-inherit cursor-pointer select-none"
+                  aria-label="Aumentar goles visita"
+                >
+                  +
+                </button>
+              </div>
             </div>
           ) : (
             <div className="text-[11px] text-gh-text-muted italic">Bloqueado</div>

@@ -5,7 +5,7 @@ export default function MobileNav({ currentUser, activeTab, setActiveTab, active
   if (!currentUser) return null;
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-40 bg-[#0d1117]/95 border-t border-gh-border p-2 backdrop-blur-md md:hidden">
+    <nav className="fixed bottom-0 left-0 right-0 z-40 bg-gh-bg-light/95 border-t border-gh-border p-2 backdrop-blur-md md:hidden transition-theme">
       <div className="flex justify-around items-center max-w-md mx-auto">
         {!currentUser.es_master ? (
           <>

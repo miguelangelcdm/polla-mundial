@@ -147,14 +147,24 @@ export default function AuthCard({
                 <Tabs.Panel id="register">
                   <div className="mt-6">
                     <form onSubmit={onRegister} className="space-y-6">
-                      <Input 
-                        type="text" 
-                        label="Tu Nombre Completo"
-                        labelPlacement="outside"
-                        placeholder="Ej: Miguel Alejo"
-                        value={joinForm.nombre}
-                        onChange={(e) => setJoinForm({...joinForm, nombre: e.target.value})}
-                      />
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <Input 
+                          type="text" 
+                          label="Nombre"
+                          labelPlacement="outside"
+                          placeholder="Ej: Miguel"
+                          value={joinForm.nombre}
+                          onChange={(e) => setJoinForm({...joinForm, nombre: e.target.value})}
+                        />
+                        <Input 
+                          type="text" 
+                          label="Apellido"
+                          labelPlacement="outside"
+                          placeholder="Ej: Alejo"
+                          value={joinForm.apellido}
+                          onChange={(e) => setJoinForm({...joinForm, apellido: e.target.value})}
+                        />
+                      </div>
                       <Input 
                         type="password" 
                         label="Contraseña"

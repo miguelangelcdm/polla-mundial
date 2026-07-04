@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { 
   Trophy, Star, Settings, Globe, Crown, LogOut, 
   AlertCircle, RefreshCw, Check
@@ -17,6 +17,7 @@ import Leaderboard from './components/Leaderboard';
 import AuthCard from './components/AuthCard';
 import GestorDashboard from './components/GestorDashboard';
 import MasterDashboard from './components/MasterDashboard';
+import MemberDashboard from './components/MemberDashboard';
 
 // UI Atómica
 import { Button } from './components/ui/button';
@@ -59,11 +60,12 @@ export default function App() {
   // Estados para vistas de administración
   const [gruposList, setGruposList] = useState([]);
   const [usuariosList, setUsuariosList] = useState([]);
+  const [allPredicciones, setAllPredicciones] = useState([]);
   
   // --- FORMULARIOS DE REGISTRO / LOGIN ---
   const [authTab, setAuthTab] = useState('login');
   const [loginForm, setLoginForm] = useState({ username: '', password: '' });
-  const [joinForm, setJoinForm] = useState({ nombre: '', username: '', password: '', codigoGrupo: '' });
+  const [joinForm, setJoinForm] = useState({ nombre: '', apellido: '', username: '', password: '', codigoGrupo: '' });
   const [createForm, setCreateForm] = useState({ nombre: '', username: '', password: '', nombreGrupo: '' });
 
   // --- FORMULARIOS DE EDICIÓN ---
@@ -74,9 +76,16 @@ export default function App() {
   const [onboardingGroupName, setOnboardingGroupName] = useState('');
   const [onboardingGroupCode, setOnboardingGroupCode] = useState('');
 
+  // Ref to store latest currentUser to avoid dependency loops in callbacks
+  const currentUserRef = useRef(null);
+  useEffect(() => {
+    currentUserRef.current = currentUser;
+  }, [currentUser]);
+
   // --- CARGAR DATOS PRINCIPALES ---
   const cargarDatosApp = useCallback(async (user) => {
-    if (!user) return;
+    const activeUser = user || currentUserRef.current;
+    if (!activeUser) return;
     try {
       const listPartidos = await db.getPartidos();
       setPartidos(listPartidos);
@@ -89,13 +98,14 @@ export default function App() {
         initResEdicion[p.id] = {
           goles_local: resOficiales[p.id]?.goles_local !== undefined ? resOficiales[p.id].goles_local : '',
           goles_visita: resOficiales[p.id]?.goles_visita !== undefined ? resOficiales[p.id].goles_visita : '',
-          cerrado: resOficiales[p.id]?.cerrado || false
+          cerrado: resOficiales[p.id]?.cerrado || false,
+          ganador_nombre: resOficiales[p.id]?.ganador_nombre || ''
         };
       });
       setResultadoEdicion(initResEdicion);
 
-      if (!user.es_master) {
-        const listPreds = await db.getPredicciones(user.id);
+      if (!activeUser.es_master) {
+        const listPreds = await db.getPredicciones(activeUser.id);
         const predsObj = {};
         listPreds.forEach(p => {
           predsObj[p.partido_id] = {
@@ -105,18 +115,21 @@ export default function App() {
         });
         setPredicciones(predsObj);
         
-        if (user.grupo_id) {
-          const tabla = await db.getTablaPosiciones(user.grupo_id);
+        if (activeUser.grupo_id) {
+          const tabla = await db.getTablaPosiciones(activeUser.grupo_id);
           setTablaPosiciones(tabla);
         }
       }
 
-      if (user.es_admin || user.es_master) {
+      if (activeUser.es_admin || activeUser.es_master) {
         const grupos = await db.getGrupos();
         setGruposList(grupos);
         
         const usuarios = await db.getUsuarios();
         setUsuariosList(usuarios);
+
+        const allPreds = await db.getAllPredicciones();
+        setAllPredicciones(allPreds);
       }
     } catch (err) {
       sileo.error({ title: "Error al cargar datos", description: err.message });
@@ -193,14 +206,27 @@ export default function App() {
   // Registrarse sin grupo (registro simplificado)
   const handleRegister = async (e) => {
     e.preventDefault();
-    const { nombre, password } = joinForm;
-    if (!nombre || !password) {
+    const { nombre, apellido, password } = joinForm;
+    if (!nombre || !apellido || !password) {
       sileo.error({ title: "Completa todos los campos" });
       return;
     }
     setLoading(true);
     try {
-      const base = nombre
+      const fullNombre = `${nombre.trim()} ${apellido.trim()}`;
+      
+      // Validar si el participante ya existe en la lista local antes de registrar
+      const allUsers = await db.getUsuarios();
+      if (allUsers.some(u => u.nombre.toLowerCase() === fullNombre.toLowerCase())) {
+        sileo.error({ 
+          title: "Participante ya registrado", 
+          description: `El nombre "${fullNombre}" ya está registrado en el sistema. Por favor, usa una variación o agrega tu segundo apellido.`
+        });
+        setLoading(false);
+        return;
+      }
+
+      const base = fullNombre
         .trim()
         .toLowerCase()
         .normalize("NFD")
@@ -215,7 +241,7 @@ export default function App() {
 
       while (attempt < 5) {
         try {
-          u = await db.register(nombre, username, password);
+          u = await db.register(fullNombre, username, password);
           break; // Exito
         } catch (err) {
           const isDup = err.message.includes("ya está registrado") || 
@@ -337,6 +363,23 @@ export default function App() {
       setLoading(false);
     }
   };
+  // Guardar Predicción Individual (Tile 2)
+  const handleSaveSinglePrediction = async (partidoId, golesLocal, golesVisita) => {
+    if (golesLocal === '' || golesVisita === '' || golesLocal === undefined || golesVisita === undefined) {
+      sileo.error({ title: "Ingresa un marcador válido" });
+      return;
+    }
+    setLoading(true);
+    try {
+      await db.savePrediccion(currentUser.id, partidoId, Number(golesLocal), Number(golesVisita));
+      sileo.success({ title: "Pronóstico guardado", description: "Tu predicción se ha registrado con éxito." });
+      await cargarDatosApp();
+    } catch (err) {
+      sileo.error({ title: "Error al guardar pronóstico", description: err.message });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Guardar Resultado Oficial (Admin / Master)
   const handleSaveResultado = async (partidoId) => {
@@ -346,9 +389,16 @@ export default function App() {
       return;
     }
     
+    const gL = parseInt(rEdit.goles_local);
+    const gV = parseInt(rEdit.goles_visita);
+    if (gL === gV && !rEdit.ganador_nombre) {
+      sileo.error({ title: "Clasificación Requerida", description: "Debes seleccionar el equipo que avanza (ganador de la prórroga/penaltis) si el partido termina empatado." });
+      return;
+    }
+
     setLoading(true);
     try {
-      await db.saveResultado(partidoId, rEdit.goles_local, rEdit.goles_visita, true);
+      await db.saveResultado(partidoId, rEdit.goles_local, rEdit.goles_visita, true, rEdit.ganador_nombre || null);
       sileo.success({ title: "Resultado cargado", description: "El partido ha sido cerrado y los puntos recalculados." });
       await cargarDatosApp();
     } catch (err) {
@@ -506,7 +556,7 @@ export default function App() {
   }
 
   return (
-    <div className={`min-h-screen flex flex-col relative overflow-hidden bg-gh-bg-dark text-gh-text transition-colors duration-250 ${!currentUser ? 'lg:h-screen lg:overflow-hidden' : ''}`}>
+    <div className={`min-h-screen flex flex-col relative overflow-x-clip bg-gh-bg-dark text-gh-text transition-colors duration-250 ${!currentUser ? 'lg:h-screen lg:overflow-hidden' : ''}`}>
       {/* Background Aura Spots (Solo visibles en Dark Mode) */}
       {theme === 'dark' && (
         <>
@@ -517,7 +567,7 @@ export default function App() {
       )}
 
       {/* Physics-based Sileo Toast Container */}
-      <Toaster position="top-center" theme={theme} />
+      <Toaster position="top-center" theme={theme === 'dark' ? 'light' : 'dark'} />
 
       {/* --- FORMULARIO DE ACCESO --- */}
       {!currentUser ? (
@@ -537,7 +587,16 @@ export default function App() {
         /* --- APLICACIÓN PRINCIPAL --- */
         <>
           {/* NAV SUPERIOR STICKY */}
-          <Navbar currentUser={currentUser} onLogout={handleLogout} theme={theme} toggleTheme={toggleTheme} />
+          <Navbar 
+            currentUser={currentUser} 
+            onLogout={handleLogout} 
+            theme={theme} 
+            toggleTheme={toggleTheme}
+            activeTab={activeTab}
+            setActiveTab={setActiveTab}
+            activeAdminTab={activeAdminTab}
+            setActiveAdminTab={setActiveAdminTab}
+          />
 
           {/* CUERPO PRINCIPAL */}
           <main className="flex-1 max-w-6xl w-full mx-auto px-4 py-6 pb-24 md:pb-12 z-10 relative">
@@ -640,58 +699,15 @@ export default function App() {
             ) : (
               /* --- VISTAS NORMALES (Usuario con grupo o master) --- */
               <>
-                {/* VISTA DE PREDICCIONES Y POSICIONES (Normal / Gestor) */}
                 {!currentUser.es_master && (
-                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    
-                    {/* COLUMNA 1 & 2: PREDICCIONES (Para Desktop) */}
-                    <div className={`lg:col-span-2 space-y-6 ${activeTab === 'predicciones' ? 'block' : 'hidden lg:block'}`}>
-                      <div className="flex items-center justify-between border-b border-gh-border pb-3">
-                        <h2 className="text-2xl font-bold font-barlow text-white tracking-wider flex items-center gap-2">
-                          <Star size={20} className="text-neon-blue" />
-                          MIS PREDICCIONES
-                        </h2>
-                        <span className="text-xs text-gh-text-muted">Mundial 2026 · Octavos</span>
-                      </div>
-
-                      {/* REGLAS DEL JUEGO Accordion */}
-                      <RulesAccordion />
-
-                      {/* LISTADO DE PARTIDOS */}
-                      <div className="space-y-4">
-                        {partidos.map((partido) => (
-                          <MatchItem 
-                            key={partido.id}
-                            partido={partido}
-                            pred={predicciones[partido.id]}
-                            res={resultados[partido.id]}
-                            onChangePrediction={handleUpdatePrediction}
-                          />
-                        ))}
-                      </div>
-
-                      {/* Guardar Predicciones */}
-                      <div className="flex justify-end pt-2">
-                        <Button 
-                          variant="neon-blue"
-                          size="lg"
-                          onClick={handleSavePredicciones}
-                          className="flex items-center gap-2 h-11"
-                        >
-                          <Check size={18} /> GUARDAR MIS PREDICCIONES
-                        </Button>
-                      </div>
-                    </div>
-
-                    {/* COLUMNA 3: TABLA DE POSICIONES (Para Desktop) */}
-                    <div className={`space-y-6 ${activeTab === 'tabla' ? 'block' : 'hidden lg:block'}`}>
-                      <Leaderboard 
-                        tablaPosiciones={tablaPosiciones} 
-                        currentUserId={currentUser.id} 
-                      />
-                    </div>
-
-                  </div>
+                  <MemberDashboard
+                    partidos={partidos}
+                    predicciones={predicciones}
+                    resultados={resultados}
+                    tablaPosiciones={tablaPosiciones}
+                    currentUser={currentUser}
+                    onSavePrediction={handleSaveSinglePrediction}
+                  />
                 )}
 
                 {/* --- PANEL ADMIN (GESTOR DE GRUPO) --- */}
@@ -719,6 +735,8 @@ export default function App() {
                     gruposList={gruposList}
                     usuariosList={usuariosList}
                     partidos={partidos}
+                    resultados={resultados}
+                    allPredicciones={allPredicciones}
                     resultadoEdicion={resultadoEdicion}
                     setResultadoEdicion={setResultadoEdicion}
                     nuevoGrupoNombre={nuevoGrupoNombre}
@@ -745,37 +763,6 @@ export default function App() {
               activeAdminTab={activeAdminTab}
               setActiveAdminTab={setActiveAdminTab}
             />
-          )}
-
-          {/* BARRA DE NAVEGACIÓN COMPLEMENTARIA EN DESKTOP (ARRIBA DEL PIE DE PÁGINA) */}
-          {currentUser && currentUser.grupo_id && currentUser.es_admin && !currentUser.es_master && (
-            <div className="hidden md:flex justify-center mb-6 z-10 relative">
-              <div className="inline-flex bg-[#0d1627]/60 border border-gh-border p-1 rounded-lg backdrop-blur-md">
-                <button 
-                  onClick={() => setActiveTab('predicciones')}
-                  className={`px-4 py-1.5 rounded-md text-xs font-semibold tracking-wider font-barlow cursor-pointer transition-all ${
-                    activeTab === 'predicciones' 
-                      ? 'bg-wc-purple/20 text-white border border-wc-purple/40 shadow-xs' 
-                      : 'text-gh-text-muted hover:text-white border border-transparent'
-                  }`}
-                >
-                  PREDICCIONES Y POSICIONES
-                </button>
-                <button 
-                  onClick={() => {
-                    setActiveTab('admin');
-                    setActiveAdminTab('grupo_gestor');
-                  }}
-                  className={`px-4 py-1.5 rounded-md text-xs font-semibold tracking-wider font-barlow cursor-pointer transition-all ${
-                    activeTab === 'admin' 
-                      ? 'bg-wc-red/20 text-white border border-wc-red/40 shadow-xs' 
-                      : 'text-gh-text-muted hover:text-white border border-transparent'
-                  }`}
-                >
-                  GESTIÓN DE FAMILIA
-                </button>
-              </div>
-            </div>
           )}
         </>
       )}

@@ -30,6 +30,22 @@ export const PARTIDOS_BASE = [
   { id: 'octavo_f', fecha: '6 Jul', sede: 'Por confirmar', local: 'España 🇪🇸', visita: 'Portugal 🇵🇹', confirmado: false },
   { id: 'octavo_g', fecha: '7 Jul', sede: 'Por confirmar', local: 'Argentina 🇦🇷', visita: 'Colombia 🇨🇴', confirmado: false },
   { id: 'octavo_h', fecha: '7 Jul', sede: 'Por confirmar', local: 'Suiza 🇨🇭', visita: 'Australia 🇦🇺', confirmado: false },
+  
+  // Cuartos de Final
+  { id: 'cuartos_a', fecha: '10 Jul', sede: 'SoFi Stadium', local: 'Ganador Octavos A', visita: 'Ganador Octavos B', confirmado: false },
+  { id: 'cuartos_b', fecha: '10 Jul', sede: 'MetLife Stadium', local: 'Ganador Octavos C', visita: 'Ganador Octavos D', confirmado: false },
+  { id: 'cuartos_c', fecha: '11 Jul', sede: 'AT&T Stadium', local: 'Ganador Octavos E', visita: 'Ganador Octavos F', confirmado: false },
+  { id: 'cuartos_d', fecha: '11 Jul', sede: 'Estadio Azteca', local: 'Ganador Octavos G', visita: 'Ganador Octavos H', confirmado: false },
+  
+  // Semifinales
+  { id: 'semi_a', fecha: '14 Jul', sede: 'Hard Rock Stadium', local: 'Ganador Cuartos A', visita: 'Ganador Cuartos B', confirmado: false },
+  { id: 'semi_b', fecha: '15 Jul', sede: 'MetLife Stadium', local: 'Ganador Cuartos C', visita: 'Ganador Cuartos D', confirmado: false },
+  
+  // Tercer Puesto
+  { id: 'tercer_puesto', fecha: '18 Jul', sede: 'AT&T Stadium', local: 'Perdedor Semifinal A', visita: 'Perdedor Semifinal B', confirmado: false },
+  
+  // Final
+  { id: 'final', fecha: '19 Jul', sede: 'MetLife Stadium', local: 'Ganador Semifinal A', visita: 'Ganador Semifinal B', confirmado: false },
 ];
 
 // Reglas del Sistema de Puntos
@@ -75,8 +91,9 @@ const initMockDB = () => {
     ]);
   }
   
-  // Agregar partidos F, G, H en las predicciones si se confirman
-  if (!localStorage.getItem('pb_partidos_estados')) {
+  // Agregar partidos F, G, H en las predicciones si se confirman (actualizar si cambio de esquema de octavos a fixture completo)
+  const partidosExistentes = getLocalData('pb_partidos_estados');
+  if (!partidosExistentes || partidosExistentes.length < 16) {
     setLocalData('pb_partidos_estados', PARTIDOS_BASE);
   }
 };
@@ -151,6 +168,63 @@ export const calcularPuntosPartido = (predLocal, predVisita, resLocal, resVisita
   return REGLAS_PUNTOS.incorrecto;
 };
 
+// Mappings para progresión automática del mundial
+const MAPA_PROPAGACION = {
+  'octavo_a': { sig: 'cuartos_a', pos: 'local' },
+  'octavo_b': { sig: 'cuartos_a', pos: 'visita' },
+  'octavo_c': { sig: 'cuartos_b', pos: 'local' },
+  'octavo_d': { sig: 'cuartos_b', pos: 'visita' },
+  'octavo_e': { sig: 'cuartos_c', pos: 'local' },
+  'octavo_f': { sig: 'cuartos_c', pos: 'visita' },
+  'octavo_g': { sig: 'cuartos_d', pos: 'local' },
+  'octavo_h': { sig: 'cuartos_d', pos: 'visita' },
+  
+  'cuartos_a': { sig: 'semi_a', pos: 'local' },
+  'cuartos_b': { sig: 'semi_a', pos: 'visita' },
+  'cuartos_c': { sig: 'semi_b', pos: 'local' },
+  'cuartos_d': { sig: 'semi_b', pos: 'visita' },
+  
+  'semi_a': { sig: 'final', pos: 'local', perdedorSig: 'tercer_puesto', perdedorPos: 'local' },
+  'semi_b': { sig: 'final', pos: 'visita', perdedorSig: 'tercer_puesto', perdedorPos: 'visita' }
+};
+
+export const propagarGanador = (partidoId, ganadorNombre, perdedorNombre) => {
+  const prop = MAPA_PROPAGACION[partidoId];
+  if (!prop) return;
+
+  const partidos = getLocalData('pb_partidos_estados') || [];
+  
+  // Ganador avanza
+  const matchSig = partidos.find(p => p.id === prop.sig);
+  if (matchSig) {
+    if (prop.pos === 'local') matchSig.local = ganadorNombre;
+    if (prop.pos === 'visita') matchSig.visita = ganadorNombre;
+    
+    if (matchSig.local && matchSig.visita && 
+        !matchSig.local.includes('Ganador') && !matchSig.visita.includes('Ganador') &&
+        !matchSig.local.includes('Por confirmar') && !matchSig.visita.includes('Por confirmar')) {
+      matchSig.confirmado = true;
+    }
+  }
+
+  // Perdedor va al Tercer Puesto (solo en Semifinales)
+  if (prop.perdedorSig) {
+    const matchPerdSig = partidos.find(p => p.id === prop.perdedorSig);
+    if (matchPerdSig) {
+      if (prop.perdedorPos === 'local') matchPerdSig.local = perdedorNombre;
+      if (prop.perdedorPos === 'visita') matchPerdSig.visita = perdedorNombre;
+      
+      if (matchPerdSig.local && matchPerdSig.visita && 
+          !matchPerdSig.local.includes('Perdedor') && !matchPerdSig.visita.includes('Perdedor') &&
+          !matchPerdSig.local.includes('Por confirmar') && !matchPerdSig.visita.includes('Por confirmar')) {
+        matchPerdSig.confirmado = true;
+      }
+    }
+  }
+
+  setLocalData('pb_partidos_estados', partidos);
+};
+
 // ====================================================================
 // INTERFAZ UNIFICADA DE MÉTODOS DE BASE DE DATOS
 // ====================================================================
@@ -207,6 +281,11 @@ export const db = {
       // Validar si usuario ya existe
       if (usuarios.some(u => u.username.toLowerCase() === cleanUsername)) {
         throw new Error("El nombre de usuario ya está registrado");
+      }
+
+      // Validar si el participante con el mismo nombre ya existe
+      if (usuarios.some(u => u.nombre.toLowerCase() === nombre.trim().toLowerCase())) {
+        throw new Error(`El nombre de participante "${nombre.trim()}" ya está registrado`);
       }
       
       let grupoId = null;
@@ -271,6 +350,17 @@ export const db = {
         .maybeSingle();
         
       if (existingUser) throw new Error("El nombre de usuario ya está registrado");
+
+      // Validar si el participante con el mismo nombre ya existe
+      const { data: existingNameUser } = await supabase
+        .from('usuarios')
+        .select('id')
+        .eq('nombre', nombre.trim())
+        .maybeSingle();
+        
+      if (existingNameUser) {
+        throw new Error(`El nombre de participante "${nombre.trim()}" ya está registrado`);
+      }
       
       // Crear usuario
       const { data: newUser, error: uErr } = await supabase
@@ -690,6 +780,18 @@ export const db = {
     }
   },
 
+  async getAllPredicciones() {
+    if (clientState.isMock) {
+      return getLocalData('pb_predicciones') || [];
+    } else {
+      const { data, error } = await supabase
+        .from('predicciones')
+        .select('*');
+      if (error) throw new Error(error.message);
+      return data || [];
+    }
+  },
+
   // --- PREDICCIONES ---
   async getPredicciones(usuarioId) {
     if (clientState.isMock) {
@@ -767,28 +869,39 @@ export const db = {
     }
   },
 
-  async saveResultado(partidoId, golesLocal, golesVisita, cerrado = false) {
+  async saveResultado(partidoId, golesLocal, golesVisita, cerrado = false, ganadorNombre = null) {
     if (clientState.isMock) {
       const resultados = getLocalData('pb_resultados');
       
       resultados[partidoId] = {
         goles_local: golesLocal === '' ? null : parseInt(golesLocal),
         goles_visita: golesVisita === '' ? null : parseInt(golesVisita),
-        cerrado: cerrado
+        cerrado: cerrado,
+        ganador_nombre: ganadorNombre,
+        fecha_cierre: cerrado ? new Date().toISOString() : null
       };
       
       setLocalData('pb_resultados', resultados);
       
-      // Si el partido F, G, H se cierra y guardó con nombres, confirmarlo
-      if (['octavo_f', 'octavo_g', 'octavo_h'].includes(partidoId)) {
+      // Propagar el ganador/perdedor si el partido se cerró
+      if (cerrado) {
         const partidos = getLocalData('pb_partidos_estados');
-        const updated = partidos.map(p => {
-          if (p.id === partidoId) {
-            return { ...p, confirmado: true };
+        const partido = partidos.find(p => p.id === partidoId);
+        if (partido) {
+          let finalGanador = ganadorNombre;
+          if (!finalGanador) {
+            const gL = parseInt(golesLocal) || 0;
+            const gV = parseInt(golesVisita) || 0;
+            if (gL > gV) finalGanador = partido.local;
+            else if (gL < gV) finalGanador = partido.visita;
+            else finalGanador = partido.local; // fallback por defecto si empatan y no se indicó
           }
-          return p;
-        });
-        setLocalData('pb_partidos_estados', updated);
+          const localName = partido.local;
+          const visitaName = partido.visita;
+          const perdedorNombre = finalGanador === localName ? visitaName : localName;
+          
+          propagarGanador(partidoId, finalGanador, perdedorNombre);
+        }
       }
       
       return resultados[partidoId];
@@ -799,7 +912,9 @@ export const db = {
           partido_id: partidoId,
           goles_local: golesLocal === '' ? null : parseInt(golesLocal),
           goles_visita: golesVisita === '' ? null : parseInt(golesVisita),
-          cerrado: cerrado
+          cerrado: cerrado,
+          ganador_nombre: ganadorNombre,
+          fecha_cierre: cerrado ? new Date().toISOString() : null
         }, { onConflict: 'partido_id' })
         .select()
         .single();

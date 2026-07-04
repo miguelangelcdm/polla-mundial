@@ -29,6 +29,11 @@
   --color-success: var(--accent-green);
   --color-warning: var(--accent-yellow);
   --color-danger: var(--accent-red);
+
+  /* Neon/accent mappings for compatibility and design fidelity */
+  --color-neon-blue: var(--accent-purple);
+  --color-neon-pink: var(--accent-red);
+  --color-neon-green: var(--accent-green);
 }
 
 /* --- DUAL THEME CONFIGURATION --- */
@@ -115,14 +120,19 @@ h1, h2, h3, h4, .font-barlow {
   background: var(--color-gh-text-muted);
 }
 
-/* Card base styling */
+/* Smooth Theme & State Transitions */
+.transition-theme {
+  transition: background-color 0.25s ease, border-color 0.25s ease, color 0.25s ease, box-shadow 0.25s ease;
+}
+
+/* Card base styling using dynamic theme transitions */
 .gh-card {
   background: var(--color-gh-bg-light);
   backdrop-filter: blur(16px);
   border: 1px solid var(--color-gh-border);
   border-radius: 16px;
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.03);
-  transition: all 0.25s ease;
+  transition: background-color 0.25s ease, border-color 0.25s ease, color 0.25s ease, box-shadow 0.25s ease;
 }
 .dark .gh-card {
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
@@ -243,13 +253,31 @@ input {
     height: 200px;
   }
 }
+/* Sileo toast base/light mode overrides using official CSS variables */
+:root {
+  --sileo-fill: #ffffff;
+  --sileo-text: #0f172a;
+}
+
+/* Fallback selector overrides for Sileo toast elements (Light Mode) */
+[data-sileo-title] {
+  color: #0f172a !important;
+}
+[data-sileo-description] {
+  color: #64748b !important;
+}
+[data-sileo-button] {
+  background-color: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
 /* Sileo toast dark mode overrides using official CSS variables */
 .dark {
   --sileo-fill: #21262d;
   --sileo-text: #f0f6fc;
 }
 
-/* Fallback selector overrides for Sileo toast elements */
+/* Fallback selector overrides for Sileo toast elements (Dark Mode) */
 .dark [data-sileo-title] {
   color: #f0f6fc !important;
 }
@@ -262,4 +290,10 @@ input {
 .dark [data-sileo-button] {
   background-color: #30363d !important;
   color: #f0f6fc !important;
+}
+
+/* Force Sileo SVG path background to match our CSS variable --sileo-fill */
+[data-sileo-canvas] svg *,
+[data-sileo-svg] * {
+  fill: var(--sileo-fill) !important;
 }

@@ -80,9 +80,79 @@ Hemos migrado toda la interfaz de componentes (antes basada en shadcn/ui y Radix
     npm start
     ```
     
-    Edite el archivo `.env` en la raíz del proyecto para conectar su base de datos Supabase en la nube.
-    
-    - Fixed component state declaration in `src/components/MasterDashboard.jsx` to resolve build errors.
-- Updated HeroUI `<Select>` component to correctly handle family selection and display scores.
-- Added dark mode support to Sileo Toaster via `theme` prop for consistent toast styling.
-- Adjusted ListBox items to use `value` prop for proper selection handling.
+     Edite el archivo `.env` en la raíz del proyecto para conectar su base de datos Supabase en la nube.
+
+---
+
+## 🎨 Mejoras de Diseño y Experiencia de Usuario (Julio 2026)
+
+Hemos llevado a cabo un rediseño de la interfaz visual y la navegación enfocado en principios de **Design Engineering** (basados en el repositorio de **ui-skills**):
+
+1. **Navegación Desktop Unificada**: Se integraron las pestañas de navegación principales directamente en la cabecera sticky (`Navbar.jsx`). Se eliminó la barra flotante inferior en pantallas grandes, liberando espacio vertical y centralizando la navegación.
+2. **MobileNav con Tema Dinámico**: Corregido el bug del modo claro de la barra móvil inferior. Ahora utiliza la clase `.transition-theme` y fondo translúcido (`bg-gh-bg-light/95`) que responde correctamente a ambos temas.
+3. **Predicciones Táctiles (`MatchItem.jsx`)**: Se reemplazaron los campos numéricos de goles por controles táctiles con botones `+` y `-` a cada lado. En celulares, esto permite ajustar marcadores mediante toques directos sin necesidad de abrir el teclado numérico.
+4. **Podio Gamificado (`Leaderboard.jsx`)**: Se rediseñó la sección superior de la tabla de posiciones con un podio visual en 3D (segundo, primero y tercer lugar ordenados de izquierda a derecha), con medallas, auras dinámicas y avatares destacados.
+5. **Efectos de Micro-Interacción**:
+   - Transiciones suaves en todos los componentes con clase `.transition-theme`.
+   - Efecto hover con escala suave (`hover:scale-[1.01]`) y sombras suaves en las tarjetas de partidos activos.
+   - Vinculación correcta de las variables de color `--color-neon-blue`, `--color-neon-pink` y `--color-neon-green` en la directiva `@theme` de Tailwind CSS v4.
+
+---
+
+## 🚀 Guía de Despliegue en Supabase y Netlify
+
+Sigue estos pasos para poner la aplicación en producción utilizando la base de datos Supabase en la nube y el alojamiento estático de Netlify.
+
+### 1. Configuración de la Base de Datos en Supabase
+
+1. **Crear Proyecto**: Regístrate o inicia sesión en [Supabase](https://supabase.com) y crea un nuevo proyecto.
+2. **Crear Tablas y Semilla**:
+   - Ve a la sección **SQL Editor** en el panel lateral de Supabase.
+   - Crea un nuevo query, copia el contenido completo del archivo `schema.sql` de este proyecto y ejecútalo (`Run`).
+   - Esto creará las tablas `grupos`, `usuarios`, `resultados` y `predicciones`, junto con sus índices y el usuario administrador principal (`master` / `master123`).
+3. **Desactivar o Configurar RLS (Row Level Security)**:
+   - Para un entorno rápido y privado entre amigos, puedes desactivar RLS en las tablas `grupos`, `usuarios`, `resultados` y `predicciones` en el panel de base de datos de Supabase.
+   - Si prefieres habilitar RLS, recuerda agregar las políticas correspondientes en la pestaña **Authentication** / **Policies** para permitir accesos de lectura y escritura anónimos o por usuario.
+4. **Obtener las Credenciales**:
+   - Ve a **Project Settings** (icono de engranaje) -> **API**.
+   - Copia la **Project API URL** (será tu `VITE_SUPABASE_URL`).
+   - Copia la **anon public API key** (será tu `VITE_SUPABASE_ANON_KEY`).
+
+### 2. Configuración Local (Opcional)
+
+Si deseas probar la base de datos real localmente antes de subir a Netlify:
+1. Crea un archivo `.env` en la raíz del proyecto basándote en `.env.example`.
+2. Llena las variables `VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY` con tus credenciales.
+3. Ejecuta `npm run dev`. La consola del navegador indicará si la conexión fue exitosa. Si falla la conexión, la aplicación activará automáticamente el modo de simulación local (`LocalStorage`).
+
+### 3. Despliegue en Netlify
+
+#### Opción A: Despliegue mediante GitHub (Recomendado)
+1. Sube tu proyecto a un repositorio de **GitHub** (asegúrate de no subir el archivo `.env` local).
+2. Entra a [Netlify](https://netlify.com) y selecciona **Add new site** -> **Import an existing project** -> GitHub.
+3. Configura los parámetros del Build:
+   - **Build command**: `npm run build`
+   - **Publish directory**: `dist`
+4. Configura las Variables de Entorno en Netlify:
+   - Ve a **Site settings** -> **Environment variables** -> **Add a variable**.
+   - Agrega `VITE_SUPABASE_URL` y su valor correspondiente.
+   - Agrega `VITE_SUPABASE_ANON_KEY` y su valor correspondiente.
+5. Haz clic on **Deploy site**.
+
+#### Opción B: Despliegue Manual con Netlify CLI
+1. Instala el CLI de Netlify globalmente:
+   ```bash
+   npm install -g netlify-cli
+   ```
+2. Compila el proyecto en tu máquina local:
+   ```bash
+   npm run build
+   ```
+3. Inicia sesión y despliega la carpeta `dist`:
+   ```bash
+   netlify deploy --prod --dir=dist
+   ```
+4. Agrega las variables `VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY` en la sección de administración del sitio en la web de Netlify.
+
+> [!NOTE]
+> El archivo `public/_redirects` ya ha sido incluido en el proyecto. Esto asegura que Netlify maneje correctamente las rutas internas de React (Vite Router) sin generar errores 404 al recargar el navegador en rutas como `/dashboard` o `/onboarding`.
