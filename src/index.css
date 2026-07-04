@@ -1,0 +1,265 @@
+@import "tailwindcss";
+@import "@heroui/styles";
+
+/* Register HeroUI theme source */
+@source "../node_modules/@heroui/react/dist/**/*.{js,ts,jsx,tsx}";
+
+@theme {
+  --font-display: "Outfit", "Plus Jakarta Sans", sans-serif;
+  --font-sans: "Plus Jakarta Sans", sans-serif;
+  
+  /* Dual Theme CSS Variables mapped to Tailwind classes */
+  --color-gh-bg: var(--bg-main);
+  --color-gh-bg-dark: var(--bg-dark);
+  --color-gh-bg-light: var(--bg-card);
+  --color-gh-bg-active: var(--bg-active);
+  --color-gh-border: var(--border-color);
+  --color-gh-border-active: var(--border-active);
+  --color-gh-text: var(--text-color);
+  --color-gh-text-muted: var(--text-muted);
+  
+  /* Accents */
+  --color-wc-purple: var(--accent-purple);
+  --color-wc-green: var(--accent-green);
+  --color-wc-yellow: var(--accent-yellow);
+  --color-wc-red: var(--accent-red);
+
+  /* Map standard theme colors for Hero UI v3 classes compatibility */
+  --color-secondary: var(--accent-purple);
+  --color-success: var(--accent-green);
+  --color-warning: var(--accent-yellow);
+  --color-danger: var(--accent-red);
+}
+
+/* --- DUAL THEME CONFIGURATION --- */
+:root {
+  /* LIGHT MODE (Base System) */
+  --bg-main: #f8fafc;
+  --bg-dark: #f1f5f9;
+  --bg-card: rgba(255, 255, 255, 0.85);
+  --bg-active: #e2e8f0;
+  --border-color: #e2e8f0;
+  --border-active: #cbd5e1;
+  --text-color: #0f172a;
+  --text-muted: #64748b;
+  
+  --accent-purple: #4f46e5; /* Deep Royal Indigo */
+  --accent-green: #0d9488;  /* Sophisticated Emerald Teal */
+  --accent-yellow: #d97706; /* Amber Gold */
+  --accent-red: #e11d48;    /* Crimson Rose Red */
+
+  /* HeroUI v3 semantic variables Light theme mapping */
+  --secondary: var(--accent-purple);
+  --secondary-foreground: #ffffff;
+  --success: var(--accent-green);
+  --success-foreground: #ffffff;
+  --warning: var(--accent-yellow);
+  --warning-foreground: #ffffff;
+  --danger: var(--accent-red);
+  --danger-foreground: #ffffff;
+}
+
+.dark {
+  /* DARK MODE (World Cup Theme) */
+  --bg-main: #020813;
+  --bg-dark: #01040a;
+  --bg-card: rgba(8, 17, 34, 0.45);
+  --bg-active: rgba(79, 70, 229, 0.15);
+  --border-color: rgba(255, 255, 255, 0.08);
+  --border-active: rgba(79, 70, 229, 0.4);
+  --text-color: #f5f6f8;
+  --text-muted: #95a5a6;
+  
+  --accent-purple: #6366f1; /* Indigo Purple */
+  --accent-green: #10b981;  /* Emerald Green */
+  --accent-yellow: #fbbf24; /* Gold Yellow */
+  --accent-red: #f43f5e;    /* Sleek Rose Red */
+
+  /* HeroUI v3 semantic variables Dark theme mapping */
+  --secondary: var(--accent-purple);
+  --secondary-foreground: #ffffff;
+  --success: var(--accent-green);
+  --success-foreground: #ffffff;
+  --warning: var(--accent-yellow);
+  --warning-foreground: #ffffff;
+  --danger: var(--accent-red);
+  --danger-foreground: #ffffff;
+}
+
+/* Smooth Transition for Theme Toggles */
+body {
+  font-family: var(--font-sans);
+  background: var(--color-gh-bg-dark);
+  color: var(--color-gh-text);
+  min-height: 100vh;
+  transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+h1, h2, h3, h4, .font-barlow {
+  font-family: var(--font-display);
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: var(--color-gh-bg-dark);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-gh-border);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-gh-text-muted);
+}
+
+/* Card base styling */
+.gh-card {
+  background: var(--color-gh-bg-light);
+  backdrop-filter: blur(16px);
+  border: 1px solid var(--color-gh-border);
+  border-radius: 16px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.03);
+  transition: all 0.25s ease;
+}
+.dark .gh-card {
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+}
+
+/* Dynamic Glow Effects (Light Mode: subtle shadow, Dark Mode: neon ring) */
+.glow-blue {
+  box-shadow: 0 4px 15px rgba(99, 102, 241, 0.05);
+  border-color: rgba(99, 102, 241, 0.2);
+}
+.dark .glow-blue {
+  box-shadow: 0 0 20px rgba(140, 82, 255, 0.12), inset 0 0 12px rgba(140, 82, 255, 0.05);
+  border-color: rgba(140, 82, 255, 0.3);
+}
+.glow-blue:focus-within {
+  box-shadow: 0 4px 20px rgba(99, 102, 241, 0.12);
+  border-color: var(--color-wc-purple);
+}
+.dark .glow-blue:focus-within {
+  box-shadow: 0 0 25px rgba(140, 82, 255, 0.25), inset 0 0 12px rgba(140, 82, 255, 0.1);
+  border-color: var(--color-wc-purple);
+}
+
+.glow-green {
+  box-shadow: 0 4px 15px rgba(16, 185, 129, 0.05);
+  border-color: rgba(16, 185, 129, 0.2);
+}
+.dark .glow-green {
+  box-shadow: 0 0 20px rgba(57, 255, 20, 0.12), inset 0 0 12px rgba(57, 255, 20, 0.05);
+  border-color: rgba(57, 255, 20, 0.3);
+}
+.glow-green:focus-within {
+  box-shadow: 0 4px 20px rgba(16, 185, 129, 0.12);
+  border-color: var(--color-wc-green);
+}
+.dark .glow-green:focus-within {
+  box-shadow: 0 0 25px rgba(57, 255, 20, 0.25), inset 0 0 12px rgba(57, 255, 20, 0.1);
+  border-color: var(--color-wc-green);
+}
+
+.glow-pink {
+  box-shadow: 0 4px 15px rgba(239, 68, 68, 0.05);
+  border-color: rgba(239, 68, 68, 0.2);
+}
+.dark .glow-pink {
+  box-shadow: 0 0 20px rgba(255, 42, 95, 0.12), inset 0 0 12px rgba(255, 42, 95, 0.05);
+  border-color: rgba(255, 42, 95, 0.3);
+}
+.glow-pink:focus-within {
+  box-shadow: 0 4px 20px rgba(239, 68, 68, 0.12);
+  border-color: var(--color-wc-red);
+}
+.dark .glow-pink:focus-within {
+  box-shadow: 0 0 25px rgba(255, 42, 95, 0.25), inset 0 0 12px rgba(255, 42, 95, 0.1);
+  border-color: var(--color-wc-red);
+}
+
+.glow-yellow {
+  box-shadow: 0 4px 15px rgba(245, 158, 11, 0.05);
+  border-color: rgba(245, 158, 11, 0.2);
+}
+.dark .glow-yellow {
+  box-shadow: 0 0 20px rgba(251, 197, 49, 0.12), inset 0 0 12px rgba(251, 197, 49, 0.05);
+  border-color: rgba(251, 197, 49, 0.3);
+}
+.glow-yellow:focus-within {
+  box-shadow: 0 4px 20px rgba(245, 158, 11, 0.12);
+  border-color: var(--color-wc-yellow);
+}
+.dark .glow-yellow:focus-within {
+  box-shadow: 0 0 25px rgba(251, 197, 49, 0.25), inset 0 0 12px rgba(251, 197, 49, 0.1);
+  border-color: var(--color-wc-yellow);
+}
+
+/* Background spots only visible in dark mode */
+.dark .aura-spot {
+  position: absolute;
+  width: 350px;
+  height: 350px;
+  border-radius: 50%;
+  filter: blur(120px);
+  opacity: 0.05;
+  z-index: 0;
+  pointer-events: none;
+}
+.dark .aura-purple {
+  background: var(--color-wc-purple);
+  top: -10%;
+  left: -10%;
+}
+.dark .aura-green {
+  background: var(--color-wc-green);
+  bottom: -10%;
+  right: -10%;
+}
+
+/* Input Styles */
+input {
+  background: rgba(255, 255, 255, 0.8) !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #0f172a !important;
+  transition: all 0.2s ease;
+}
+.dark input {
+  background: rgba(1, 4, 10, 0.4) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  color: #f5f6f8 !important;
+}
+
+/* Split Login Image styling */
+.login-split-img {
+  height: 100%;
+  width: 100%;
+  object-cover: cover;
+}
+@media (max-width: 1024px) {
+  .login-split-img {
+    height: 200px;
+  }
+}
+/* Sileo toast dark mode overrides using official CSS variables */
+.dark {
+  --sileo-fill: #21262d;
+  --sileo-text: #f0f6fc;
+}
+
+/* Fallback selector overrides for Sileo toast elements */
+.dark [data-sileo-title] {
+  color: #f0f6fc !important;
+}
+.dark [data-sileo-description] {
+  color: #c9d1d9 !important;
+}
+.dark [data-sileo-badge] {
+  color: #58a6ff !important;
+}
+.dark [data-sileo-button] {
+  background-color: #30363d !important;
+  color: #f0f6fc !important;
+}
