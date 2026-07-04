@@ -155,4 +155,6 @@ Si deseas probar la base de datos real localmente antes de subir a Netlify:
 4. Agrega las variables `VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY` en la sección de administración del sitio en la web de Netlify.
 
 > [!NOTE]
-> El archivo `public/_redirects` ya ha sido incluido en el proyecto. Esto asegura que Netlify maneje correctamente las rutas internas de React (Vite Router) sin generar errores 404 al recargar el navegador en rutas como `/dashboard` o `/onboarding`.
+> 1. El archivo `public/_redirects` ya ha sido incluido en el proyecto. Esto asegura que Netlify maneje correctamente las rutas internas de React (Vite Router) sin generar errores 404 al recargar el navegador en rutas como `/dashboard` o `/onboarding`.
+> 2. Se ha incluido un archivo `.npmrc` con la directiva `legacy-peer-deps=true`. Esto es necesario porque algunas dependencias del ecosistema (como `lucide-react`) aún solicitan React 18 como dependencia de pares (peer dependency) en sus metadatos, mientras que este proyecto utiliza React 19.
+
