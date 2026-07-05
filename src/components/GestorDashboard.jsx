@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { sileo } from 'sileo';
-import { Settings, Users, Trophy, Copy, Lock, Info, Check, ChevronDown } from 'lucide-react';
+import { Settings, Users, Trophy, Copy, Lock, Info, Check, ChevronDown, Star } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from './ui/card';
 import { Tabs, Table, Select, ListBox } from '@heroui/react';
 import { Input } from './ui/input';
 import { Button } from './ui/button';
+import MemberDashboard from './MemberDashboard';
 
 const OBTENER_CANDIDATOS = (partidoId, partidos) => {
   const todosEquipos = [
@@ -76,7 +77,11 @@ export default function GestorDashboard({
   onSaveResultado,
   onAbrirPartido,
   onConfirmarPartidoPendiente,
-  copyToClipboard
+  copyToClipboard,
+  predicciones,
+  resultados,
+  tablaPosiciones,
+  onSavePrediction
 }) {
   const [unconfirmedEquipos, setUnconfirmedEquipos] = useState({});
   return (
@@ -114,6 +119,7 @@ export default function GestorDashboard({
               </Select.Trigger>
               <Select.Popover className="border border-gh-border bg-gh-bg-light rounded-lg shadow-xl overflow-hidden min-w-[200px] z-50">
                 <ListBox className="p-1">
+                  <ListBox.Item key="predicciones" id="predicciones" className="px-3 py-1.5 text-xs text-gh-text font-bold">PREDICCIONES</ListBox.Item>
                   <ListBox.Item key="grupo_gestor" id="grupo_gestor" className="px-3 py-1.5 text-xs text-gh-text font-bold">MI GRUPO</ListBox.Item>
                   <ListBox.Item key="resultados" id="resultados" className="px-3 py-1.5 text-xs text-gh-text font-bold">RESULTADOS REALES</ListBox.Item>
                 </ListBox>
@@ -123,6 +129,17 @@ export default function GestorDashboard({
 
           {/* Sticky Sidebar List (Desktop only) */}
           <div className="hidden md:flex flex-col gap-1.5 bg-gh-bg-light border border-gh-border p-2.5 rounded-xl shadow-xs">
+            <button
+              onClick={() => setActiveAdminTab('predicciones')}
+              className={`w-full text-left px-3.5 py-2.5 rounded-lg text-xs font-black font-barlow tracking-wider uppercase flex items-center gap-2.5 transition-all border cursor-pointer ${
+                activeAdminTab === 'predicciones'
+                  ? 'bg-wc-red/10 border-wc-red text-wc-red'
+                  : 'bg-transparent border-transparent text-gh-text-muted hover:text-gh-text hover:bg-gh-bg-active'
+              }`}
+            >
+              <Star size={15} /> PREDICCIONES
+            </button>
+
             <button
               onClick={() => setActiveAdminTab('grupo_gestor')}
               className={`w-full text-left px-3.5 py-2.5 rounded-lg text-xs font-black font-barlow tracking-wider uppercase flex items-center gap-2.5 transition-all border cursor-pointer ${
@@ -150,6 +167,17 @@ export default function GestorDashboard({
 
         {/* CONTENT PANEL AREA */}
         <div className="lg:col-span-4">
+          {activeAdminTab === 'predicciones' && (
+            <MemberDashboard
+              partidos={partidos}
+              predicciones={predicciones}
+              resultados={resultados}
+              tablaPosiciones={tablaPosiciones}
+              currentUser={currentUser}
+              onSavePrediction={onSavePrediction}
+            />
+          )}
+
           {activeAdminTab === 'grupo_gestor' && (
             <div className="space-y-6">
               <Card className="p-6 flex flex-col sm:flex-row items-center justify-between gap-4">

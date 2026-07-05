@@ -92,9 +92,9 @@ export default function Leaderboard({ tablaPosiciones, currentUserId }) {
             </div>
           ) : (
             <>
-              {restOfUsers.map((row, index) => {
+              {tablaPosiciones.map((row, index) => {
                 const esTu = row.usuario_id === currentUserId;
-                const realIndex = index + 3; // Offset by top 3
+                const realIndex = index;
 
                 return (
                   <div 

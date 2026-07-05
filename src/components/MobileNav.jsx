@@ -8,42 +8,70 @@ export default function MobileNav({ currentUser, activeTab, setActiveTab, active
     <nav className="fixed bottom-0 left-0 right-0 z-40 bg-gh-bg-light/95 border-t border-gh-border p-2 backdrop-blur-md md:hidden transition-theme">
       <div className="flex justify-around items-center max-w-md mx-auto">
         {!currentUser.es_master ? (
-          <>
-            <button 
-              onClick={() => setActiveTab('predicciones')}
-              className={`flex flex-col items-center gap-1 py-1 px-3 text-[10px] font-bold tracking-wider font-barlow transition-all cursor-pointer ${
-                activeTab === 'predicciones' ? 'text-neon-blue' : 'text-gh-text-muted hover:text-gh-text'
-              }`}
-            >
-              <Star size={18} />
-              <span>PREDICCIONES</span>
-            </button>
-            
-            <button 
-              onClick={() => setActiveTab('tabla')}
-              className={`flex flex-col items-center gap-1 py-1 px-3 text-[10px] font-bold tracking-wider font-barlow transition-all cursor-pointer ${
-                activeTab === 'tabla' ? 'text-neon-blue' : 'text-gh-text-muted hover:text-gh-text'
-              }`}
-            >
-              <Trophy size={18} />
-              <span>POSICIONES</span>
-            </button>
-
-            {currentUser.es_admin && (
+          currentUser.es_admin ? (
+            <>
+              <button 
+                onClick={() => {
+                  setActiveTab('admin');
+                  setActiveAdminTab('predicciones');
+                }}
+                className={`flex flex-col items-center gap-1 py-1 px-3 text-[10px] font-bold tracking-wider font-barlow transition-all cursor-pointer ${
+                  activeTab === 'admin' && activeAdminTab === 'predicciones' ? 'text-neon-blue' : 'text-gh-text-muted hover:text-gh-text'
+                }`}
+              >
+                <Star size={18} />
+                <span>PREDICCIONES</span>
+              </button>
+              
               <button 
                 onClick={() => {
                   setActiveTab('admin');
                   setActiveAdminTab('grupo_gestor');
                 }}
                 className={`flex flex-col items-center gap-1 py-1 px-3 text-[10px] font-bold tracking-wider font-barlow transition-all cursor-pointer ${
-                  activeTab === 'admin' ? 'text-neon-pink' : 'text-gh-text-muted hover:text-gh-text'
+                  activeTab === 'admin' && activeAdminTab === 'grupo_gestor' ? 'text-neon-blue' : 'text-gh-text-muted hover:text-gh-text'
                 }`}
               >
                 <Settings size={18} />
-                <span>ADMIN</span>
+                <span>MI GRUPO</span>
               </button>
-            )}
-          </>
+
+              <button 
+                onClick={() => {
+                  setActiveTab('admin');
+                  setActiveAdminTab('resultados');
+                }}
+                className={`flex flex-col items-center gap-1 py-1 px-3 text-[10px] font-bold tracking-wider font-barlow transition-all cursor-pointer ${
+                  activeTab === 'admin' && activeAdminTab === 'resultados' ? 'text-neon-pink' : 'text-gh-text-muted hover:text-gh-text'
+                }`}
+              >
+                <Trophy size={18} />
+                <span>RESULTADOS</span>
+              </button>
+            </>
+          ) : (
+            <>
+              <button 
+                onClick={() => setActiveTab('predicciones')}
+                className={`flex flex-col items-center gap-1 py-1 px-3 text-[10px] font-bold tracking-wider font-barlow transition-all cursor-pointer ${
+                  activeTab === 'predicciones' ? 'text-neon-blue' : 'text-gh-text-muted hover:text-gh-text'
+                }`}
+              >
+                <Star size={18} />
+                <span>PREDICCIONES</span>
+              </button>
+              
+              <button 
+                onClick={() => setActiveTab('tabla')}
+                className={`flex flex-col items-center gap-1 py-1 px-3 text-[10px] font-bold tracking-wider font-barlow transition-all cursor-pointer ${
+                  activeTab === 'tabla' ? 'text-neon-blue' : 'text-gh-text-muted hover:text-gh-text'
+                }`}
+              >
+                <Trophy size={18} />
+                <span>POSICIONES</span>
+              </button>
+            </>
+          )
         ) : (
           <>
             <button 

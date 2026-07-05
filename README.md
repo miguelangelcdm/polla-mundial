@@ -157,4 +157,11 @@ Si deseas probar la base de datos real localmente antes de subir a Netlify:
 > [!NOTE]
 > 1. El archivo `public/_redirects` ya ha sido incluido en el proyecto. Esto asegura que Netlify maneje correctamente las rutas internas de React (Vite Router) sin generar errores 404 al recargar el navegador en rutas como `/dashboard` o `/onboarding`.
 > 2. Se ha incluido un archivo `.npmrc` con la directiva `legacy-peer-deps=true`. Esto es necesario porque algunas dependencias del ecosistema (como `lucide-react`) aún solicitan React 18 como dependencia de pares (peer dependency) en sus metadatos, mientras que este proyecto utiliza React 19.
+> 3. **Migración de Base de Datos (Supabase)**: Si estás usando una base de datos de Supabase ya existente y quieres evitar errores al cerrar y guardar partidos, ejecuta el siguiente script en el **SQL Editor** de tu consola de Supabase:
+>    ```sql
+>    ALTER TABLE resultados ADD COLUMN IF NOT EXISTS ganador_nombre TEXT;
+>    ALTER TABLE resultados ADD COLUMN IF NOT EXISTS fecha_cierre TIMESTAMPTZ;
+>    ```
+> 4. **Navegación Lateral Unificada**: Tanto los Master como los Gestores de Familia tienen su navegación centralizada en el menú lateral izquierdo (Sidebar) en ordenadores, y mediante pestañas dedicadas en la barra inferior en móviles, eliminando los switchers duplicados de la cabecera.
+
 

@@ -49,7 +49,7 @@ export default function App() {
   
   // --- NAVEGACIÓN ---
   const [activeTab, setActiveTab] = useState('predicciones');
-  const [activeAdminTab, setActiveAdminTab] = useState('resultados');
+  const [activeAdminTab, setActiveAdminTab] = useState('predicciones');
 
   // --- ESTADOS DE NEGOCIO ---
   const [partidos, setPartidos] = useState([]);
@@ -155,6 +155,9 @@ export default function App() {
           if (freshUser.es_master) {
             setActiveTab('master');
             setActiveAdminTab('grupos_master');
+          } else if (freshUser.es_admin) {
+            setActiveTab('admin');
+            setActiveAdminTab('predicciones');
           } else {
             setActiveTab('predicciones');
           }
@@ -193,6 +196,9 @@ export default function App() {
       if (u.es_master) {
         setActiveTab('master');
         setActiveAdminTab('grupos_master');
+      } else if (u.es_admin) {
+        setActiveTab('admin');
+        setActiveAdminTab('predicciones');
       } else {
         setActiveTab('predicciones');
       }
@@ -309,7 +315,9 @@ export default function App() {
       setCurrentUser(u);
       localStorage.setItem('pb_session_user', JSON.stringify(u));
       sileo.success({ title: "¡Grupo Familiar creado!", description: `Código de invitación: ${u.grupo_codigo}` });
-      await cargarDatosApp();
+      setActiveTab('admin');
+      setActiveAdminTab('predicciones');
+      await cargarDatosApp(u);
     } catch (err) {
       sileo.error({ title: "Error al crear grupo", description: err.message });
     } finally {
@@ -699,7 +707,7 @@ export default function App() {
             ) : (
               /* --- VISTAS NORMALES (Usuario con grupo o master) --- */
               <>
-                {!currentUser.es_master && (
+                {!currentUser.es_master && !currentUser.es_admin && (
                   <MemberDashboard
                     partidos={partidos}
                     predicciones={predicciones}
@@ -724,6 +732,10 @@ export default function App() {
                     onAbrirPartido={handleAbrirPartido}
                     onConfirmarPartidoPendiente={handleConfirmarPartidoPendiente}
                     copyToClipboard={copyToClipboard}
+                    predicciones={predicciones}
+                    resultados={resultados}
+                    tablaPosiciones={tablaPosiciones}
+                    onSavePrediction={handleSaveSinglePrediction}
                   />
                 )}
 

@@ -35,34 +35,6 @@ export default function Navbar({
           </div>
         </div>
 
-        {/* Center Desktop Navigation for Gestors/Masters */}
-        {currentUser && !currentUser.es_master && currentUser.es_admin && currentUser.grupo_id && (
-          <div className="hidden md:flex items-center gap-1 bg-[#0d1627]/5 dark:bg-[#0d1627]/40 border border-gh-border p-1 rounded-full backdrop-blur-md">
-            <button 
-              onClick={() => setActiveTab('predicciones')}
-              className={`px-4 py-1.5 rounded-full text-xs font-bold tracking-wider font-barlow cursor-pointer transition-all ${
-                activeTab === 'predicciones' 
-                  ? 'bg-wc-purple text-white shadow-md' 
-                  : 'text-gh-text-muted hover:text-gh-text'
-              }`}
-            >
-              PREDICCIONES
-            </button>
-            <button 
-              onClick={() => {
-                setActiveTab('admin');
-                setActiveAdminTab('grupo_gestor');
-              }}
-              className={`px-4 py-1.5 rounded-full text-xs font-bold tracking-wider font-barlow cursor-pointer transition-all ${
-                activeTab === 'admin' 
-                  ? 'bg-wc-red text-white shadow-md' 
-                  : 'text-gh-text-muted hover:text-gh-text'
-              }`}
-            >
-              MI FAMILIA
-            </button>
-          </div>
-        )}
 
 
 

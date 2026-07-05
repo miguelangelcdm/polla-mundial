@@ -30,6 +30,8 @@ CREATE TABLE IF NOT EXISTS resultados (
     goles_local INTEGER,
     goles_visita INTEGER,
     cerrado BOOLEAN DEFAULT false,
+    ganador_nombre TEXT,
+    fecha_cierre TIMESTAMPTZ,
     updated_at TIMESTAMPTZ DEFAULT now()
 );
 

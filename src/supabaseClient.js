@@ -22,30 +22,30 @@ export const clientState = {
 
 // Partidos base de Octavos
 export const PARTIDOS_BASE = [
-  { id: 'octavo_a', fecha: '4 Jul', sede: 'MetLife Stadium', local: 'Canadá 🇨🇦', visita: 'Marruecos 🇲🇦', confirmado: true },
-  { id: 'octavo_b', fecha: '4 Jul', sede: 'SoFi Stadium', local: 'Brasil 🇧🇷', visita: 'Noruega 🇳🇴', confirmado: true },
-  { id: 'octavo_c', fecha: '5 Jul', sede: 'AT&T Stadium', local: 'Francia 🇫🇷', visita: 'Paraguay 🇵🇾', confirmado: true },
-  { id: 'octavo_d', fecha: '5 Jul', sede: 'Estadio Azteca', local: 'México 🇲🇽', visita: 'Inglaterra 🏴', confirmado: true },
-  { id: 'octavo_e', fecha: '6 Jul', sede: 'Hard Rock Stadium', local: 'Bélgica 🇧🇪', visita: 'USA 🇺🇸', confirmado: true },
-  { id: 'octavo_f', fecha: '6 Jul', sede: 'Por confirmar', local: 'España 🇪🇸', visita: 'Portugal 🇵🇹', confirmado: false },
-  { id: 'octavo_g', fecha: '7 Jul', sede: 'Por confirmar', local: 'Argentina 🇦🇷', visita: 'Colombia 🇨🇴', confirmado: false },
-  { id: 'octavo_h', fecha: '7 Jul', sede: 'Por confirmar', local: 'Suiza 🇨🇭', visita: 'Australia 🇦🇺', confirmado: false },
+  { id: 'octavo_a', fecha: '4 Jul', hora: '16:00 HS', sede: 'Philadelphia Stadium (Lincoln Financial Field)', ciudad: 'Filadelfia, Pensilvania', pais: 'Estados Unidos', local: 'Francia 🇫🇷', visita: 'Paraguay 🇵🇾', confirmado: true },
+  { id: 'octavo_b', fecha: '4 Jul', hora: '20:00 HS', sede: 'Houston Stadium (NRG Stadium)', ciudad: 'Houston, Texas', pais: 'Estados Unidos', local: 'Canadá 🇨🇦', visita: 'Marruecos 🇲🇦', confirmado: true },
+  { id: 'octavo_c', fecha: '5 Jul', hora: '18:00 HS', sede: 'New York/New Jersey Stadium (MetLife Stadium)', ciudad: 'East Rutherford, Nueva Jersey', pais: 'Estados Unidos', local: 'Brasil 🇧🇷', visita: 'Noruega 🇳🇴', confirmado: true },
+  { id: 'octavo_d', fecha: '6 Jul', hora: '17:00 HS', sede: 'Mexico City Stadium (Estadio Azteca)', ciudad: 'Ciudad de México', pais: 'México', local: 'México 🇲🇽', visita: 'Inglaterra 🏴󠁧󠁢󠁥󠁮󠁧󠁿', confirmado: true },
+  { id: 'octavo_e', fecha: '6 Jul', hora: '21:00 HS', sede: 'Dallas Stadium (AT&T Stadium)', ciudad: 'Arlington, Texas', pais: 'Estados Unidos', local: 'España 🇪🇸', visita: 'Portugal 🇵🇹', confirmado: true },
+  { id: 'octavo_f', fecha: '7 Jul', hora: '15:00 HS', sede: 'Seattle Stadium (Lumen Field)', ciudad: 'Seattle, Washington', pais: 'Estados Unidos', local: 'Bélgica 🇧🇪', visita: 'USA 🇺🇸', confirmado: true },
+  { id: 'octavo_g', fecha: '7 Jul', hora: '19:00 HS', sede: 'Atlanta Stadium (Mercedes-Benz Stadium)', ciudad: 'Atlanta, Georgia', pais: 'Estados Unidos', local: 'Argentina 🇦🇷', visita: 'Egipto 🇪🇬', confirmado: true },
+  { id: 'octavo_h', fecha: '7 Jul', hora: '22:00 HS', sede: 'Vancouver Stadium (BC Place)', ciudad: 'Vancouver, Columbia Británica', pais: 'Canadá', local: 'Suiza 🇨🇭', visita: 'Colombia 🇨🇴', confirmado: true },
   
   // Cuartos de Final
-  { id: 'cuartos_a', fecha: '10 Jul', sede: 'SoFi Stadium', local: 'Ganador Octavos A', visita: 'Ganador Octavos B', confirmado: false },
-  { id: 'cuartos_b', fecha: '10 Jul', sede: 'MetLife Stadium', local: 'Ganador Octavos C', visita: 'Ganador Octavos D', confirmado: false },
-  { id: 'cuartos_c', fecha: '11 Jul', sede: 'AT&T Stadium', local: 'Ganador Octavos E', visita: 'Ganador Octavos F', confirmado: false },
-  { id: 'cuartos_d', fecha: '11 Jul', sede: 'Estadio Azteca', local: 'Ganador Octavos G', visita: 'Ganador Octavos H', confirmado: false },
+  { id: 'cuartos_a', fecha: '9 Jul', hora: '18:00 HS', sede: 'Boston Stadium (Foxborough Stadium)', ciudad: 'Foxborough, Massachusetts', pais: 'Estados Unidos', local: 'Ganador Octavos A', visita: 'Ganador Octavos B', confirmado: false },
+  { id: 'cuartos_b', fecha: '10 Jul', hora: '20:00 HS', sede: 'Los Angeles Stadium (SoFi Stadium)', ciudad: 'Inglewood, California', pais: 'Estados Unidos', local: 'Ganador Octavos C', visita: 'Ganador Octavos D', confirmado: false },
+  { id: 'cuartos_c', fecha: '11 Jul', hora: '17:00 HS', sede: 'Miami Stadium (Hard Rock Stadium)', ciudad: 'Miami Gardens, Florida', pais: 'Estados Unidos', local: 'Ganador Octavos E', visita: 'Ganador Octavos F', confirmado: false },
+  { id: 'cuartos_d', fecha: '12 Jul', hora: '19:00 HS', sede: 'Kansas City Stadium (Arrowhead Stadium)', ciudad: 'Kansas City, Missouri', pais: 'Estados Unidos', local: 'Ganador Octavos G', visita: 'Ganador Octavos H', confirmado: false },
   
   // Semifinales
-  { id: 'semi_a', fecha: '14 Jul', sede: 'Hard Rock Stadium', local: 'Ganador Cuartos A', visita: 'Ganador Cuartos B', confirmado: false },
-  { id: 'semi_b', fecha: '15 Jul', sede: 'MetLife Stadium', local: 'Ganador Cuartos C', visita: 'Ganador Cuartos D', confirmado: false },
+  { id: 'semi_a', fecha: '14 Jul', hora: '20:00 HS', sede: 'Dallas Stadium (AT&T Stadium)', ciudad: 'Arlington, Texas', pais: 'Estados Unidos', local: 'Ganador Cuartos A', visita: 'Ganador Cuartos B', confirmado: false },
+  { id: 'semi_b', fecha: '15 Jul', hora: '20:00 HS', sede: 'Atlanta Stadium (Mercedes-Benz Stadium)', ciudad: 'Atlanta, Georgia', pais: 'Estados Unidos', local: 'Ganador Cuartos C', visita: 'Ganador Cuartos D', confirmado: false },
   
   // Tercer Puesto
-  { id: 'tercer_puesto', fecha: '18 Jul', sede: 'AT&T Stadium', local: 'Perdedor Semifinal A', visita: 'Perdedor Semifinal B', confirmado: false },
+  { id: 'tercer_puesto', fecha: '18 Jul', hora: '16:00 HS', sede: 'Miami Stadium (Hard Rock Stadium)', ciudad: 'Miami Gardens, Florida', pais: 'Estados Unidos', local: 'Perdedor Semifinal A', visita: 'Perdedor Semifinal B', confirmado: false },
   
   // Final
-  { id: 'final', fecha: '19 Jul', sede: 'MetLife Stadium', local: 'Ganador Semifinal A', visita: 'Ganador Semifinal B', confirmado: false },
+  { id: 'final', fecha: '19 Jul', hora: '19:00 HS', sede: 'New York/New Jersey Stadium (MetLife Stadium)', ciudad: 'East Rutherford, Nueva Jersey', pais: 'Estados Unidos', local: 'Ganador Semifinal A', visita: 'Ganador Semifinal B', confirmado: false },
 ];
 
 // Reglas del Sistema de Puntos

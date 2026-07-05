@@ -3,6 +3,7 @@ import { Card, CardHeader, CardTitle, CardContent } from './ui/card';
 import { Select, ListBox, Button } from '@heroui/react';
 import { Star, Trophy, Calendar, Clock, Plus, Minus, Check, MapPin, ChevronDown } from 'lucide-react';
 import Leaderboard from './Leaderboard';
+import { sileo } from 'sileo';
 
 export default function MemberDashboard({
   partidos,
@@ -408,7 +409,13 @@ export default function MemberDashboard({
                             <button
                               key={p.id}
                               type="button"
-                              onClick={() => setSelectedPartidoId(p.id)}
+                              onClick={() => {
+                                setSelectedPartidoId(p.id);
+                                sileo.success({
+                                  title: `${p.local} vs ${p.visita}`,
+                                  description: `🏟️ Sede: ${p.sede || 'Por confirmar'}\n📍 Ubicación: ${p.ciudad || ''}${p.pais ? `, ${p.pais}` : ''}\n📅 Fecha: ${p.fecha} · ⏰ Hora: ${p.hora || '18:00 HS'}`
+                                });
+                              }}
                               title={`${p.local} vs ${p.visita}`}
                               className={`w-full text-left p-1 rounded border text-[9px] font-bold truncate flex items-center justify-between cursor-pointer transition-all ${
                                 isSelected
