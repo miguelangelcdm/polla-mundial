@@ -2,17 +2,17 @@ import React, { useState } from 'react';
 import { sileo } from 'sileo';
 import { Settings, Users, Trophy, Copy, Lock, Info, Check, ChevronDown, Star } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from './ui/card';
-import { Tabs, Table, Select, ListBox } from '@heroui/react';
+import { Tabs, Table } from '@heroui/react';
 import { Input } from './ui/input';
 import { Button } from './ui/button';
 import MemberDashboard from './MemberDashboard';
 
 const OBTENER_CANDIDATOS = (partidoId, partidos) => {
   const todosEquipos = [
-    'Canadá 🇨🇦', 'Marruecos 🇲🇦', 'Brasil 🇧🇷', 'Noruega 🇳🇴',
-    'Francia 🇫🇷', 'Paraguay 🇵🇾', 'México 🇲🇽', 'Inglaterra 🏴',
-    'Bélgica 🇧🇪', 'USA 🇺🇸', 'España 🇪🇸', 'Portugal 🇵🇹',
-    'Argentina 🇦🇷', 'Colombia 🇨🇴', 'Suiza 🇨🇭', 'Australia 🇦🇺'
+    'Canadá', 'Marruecos', 'Brasil', 'Noruega',
+    'Francia', 'Paraguay', 'México', 'Inglaterra',
+    'Bélgica', 'USA', 'España', 'Portugal',
+    'Argentina', 'Colombia', 'Suiza', 'Australia'
   ];
 
   if (partidoId === 'octavo_f' || partidoId === 'octavo_g' || partidoId === 'octavo_h') {
@@ -64,6 +64,20 @@ const OBTENER_CANDIDATOS = (partidoId, partidos) => {
   }
 
   return { locales: todosEquipos, visitas: todosEquipos };
+};
+
+const getCleanSelectKey = (name) => {
+  if (!name) return '';
+  return name.replace(/[\s\uD83C-\uDBFF\uDC00-\uDFFF]+/g, '');
+};
+
+const cleanTeamName = (name) => {
+  if (!name) return '';
+  return name
+    .toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[\s\uD83C-\uDBFF\uDC00-\uDFFF]+/g, '')
+    .replace(/(fr|py|ca|ma|br|no|mx|gb|be|us|es|pt|ar|eg|ch|co)$/i, '');
 };
 
 export default function GestorDashboard({
@@ -175,7 +189,7 @@ export default function GestorDashboard({
                 <Table.ScrollContainer>
                   <Table.Content aria-label="Miembros del grupo">
                     <Table.Header>
-                      <Table.Column>Nombre</Table.Column>
+                      <Table.Column isRowHeader>Nombre</Table.Column>
                       <Table.Column>Usuario</Table.Column>
                       <Table.Column>Rol</Table.Column>
                     </Table.Header>
@@ -233,7 +247,17 @@ export default function GestorDashboard({
                               value={rEdit.goles_local}
                               onChange={(e) => {
                                 const val = e.target.value === '' ? '' : parseInt(e.target.value);
-                                setResultadoEdicion({ ...resultadoEdicion, [partido.id]: { ...rEdit, goles_local: val } });
+                                const gV = rEdit.goles_visita !== '' ? parseInt(rEdit.goles_visita) : NaN;
+                                let newGanador = rEdit.ganador_nombre || '';
+                                if (val !== '' && !isNaN(gV)) {
+                                  if (val > gV) newGanador = partido.local;
+                                  else if (val < gV) newGanador = partido.visita;
+                                  else newGanador = '';
+                                }
+                                setResultadoEdicion({
+                                  ...resultadoEdicion,
+                                  [partido.id]: { ...rEdit, goles_local: val, ganador_nombre: newGanador }
+                                });
                               }}
                               placeholder="-"
                               className="w-12 h-10 text-center text-lg font-bold rounded-lg border border-gh-border bg-gh-bg-light text-gh-text focus:outline-none focus:border-wc-purple transition-all"
@@ -249,7 +273,17 @@ export default function GestorDashboard({
                               value={rEdit.goles_visita}
                               onChange={(e) => {
                                 const val = e.target.value === '' ? '' : parseInt(e.target.value);
-                                setResultadoEdicion({ ...resultadoEdicion, [partido.id]: { ...rEdit, goles_visita: val } });
+                                const gL = rEdit.goles_local !== '' ? parseInt(rEdit.goles_local) : NaN;
+                                let newGanador = rEdit.ganador_nombre || '';
+                                if (val !== '' && !isNaN(gL)) {
+                                  if (gL > val) newGanador = partido.local;
+                                  else if (gL < val) newGanador = partido.visita;
+                                  else newGanador = '';
+                                }
+                                setResultadoEdicion({
+                                  ...resultadoEdicion,
+                                  [partido.id]: { ...rEdit, goles_visita: val, ganador_nombre: newGanador }
+                                });
                               }}
                               placeholder="-"
                               className="w-12 h-10 text-center text-lg font-bold rounded-lg border border-gh-border bg-gh-bg-light text-gh-text focus:outline-none focus:border-wc-purple transition-all"
@@ -257,52 +291,50 @@ export default function GestorDashboard({
                           </div>
                           
                           {/* Dropdown Ganador */}
-                          <div className="w-32">
-                            <Select
-                              selectedKeys={rEdit.ganador_nombre ? new Set([rEdit.ganador_nombre]) : new Set()}
-                              onSelectionChange={(keys) => {
-                                let val = '';
-                                if (keys instanceof Set) val = [...keys][0];
-                                else if (typeof keys === 'string' || typeof keys === 'number') val = keys;
-                                setResultadoEdicion({
-                                  ...resultadoEdicion,
-                                  [partido.id]: { ...rEdit, ganador_nombre: val }
-                                });
-                              }}
-                              placeholder="Avanza"
-                              aria-label="Ganador"
-                              disabled={rEdit.cerrado}
-                              size="sm"
-                            >
-                              <Select.Trigger className="w-full h-8 px-2 border border-gh-border rounded bg-gh-bg-light text-[10px] text-gh-text transition-all">
-                                <Select.Value />
-                                <Select.Indicator className="text-gh-text-muted">
-                                  <ChevronDown size={12} className="transition-transform duration-200" />
-                                </Select.Indicator>
-                              </Select.Trigger>
-                              <Select.Popover className="border border-gh-border bg-gh-bg-light rounded-lg shadow-xl overflow-hidden min-w-[120px] z-50">
-                                <ListBox className="p-1">
-                                  <ListBox.Item 
-                                    key={partido.local} 
-                                    id={partido.local} 
-                                    textValue={partido.local}
-                                    className="px-2 py-1 rounded text-[10px] font-semibold text-gh-text hover:bg-wc-purple hover:text-white cursor-pointer transition-all"
-                                  >
-                                    {partido.local.split(' ')[0]}
-                                  </ListBox.Item>
-                                  <ListBox.Item 
-                                    key={partido.visita} 
-                                    id={partido.visita} 
-                                    textValue={partido.visita}
-                                    className="px-2 py-1 rounded text-[10px] font-semibold text-gh-text hover:bg-wc-purple hover:text-white cursor-pointer transition-all"
-                                  >
-                                    {partido.visita.split(' ')[0]}
-                                  </ListBox.Item>
-                                </ListBox>
-                              </Select.Popover>
-                            </Select>
-                          </div>
+                           {(() => {
+                             const currentWinnerName = rEdit.ganador_nombre || (() => {
+                               const gL = rEdit.goles_local !== '' ? parseInt(rEdit.goles_local) : NaN;
+                               const gV = rEdit.goles_visita !== '' ? parseInt(rEdit.goles_visita) : NaN;
+                               if (!isNaN(gL) && !isNaN(gV) && gL !== gV) {
+                                 return gL > gV ? partido.local : partido.visita;
+                               }
+                               return '';
+                             })();
 
+                             let selectedDropdownKey = '';
+                             if (cleanTeamName(currentWinnerName) === cleanTeamName(partido.local)) {
+                               selectedDropdownKey = 'local';
+                             } else if (cleanTeamName(currentWinnerName) === cleanTeamName(partido.visita)) {
+                               selectedDropdownKey = 'visita';
+                             }
+
+                             return (
+                                <div className="w-32">
+                                  <select
+                                    value={selectedDropdownKey}
+                                    disabled={rEdit.cerrado}
+                                    aria-label="Ganador"
+                                    onChange={(e) => {
+                                      const val = e.target.value;
+                                      let ganadorNombre = '';
+                                      if (val === 'local') ganadorNombre = partido.local;
+                                      else if (val === 'visita') ganadorNombre = partido.visita;
+
+                                      setResultadoEdicion({
+                                        ...resultadoEdicion,
+                                        [partido.id]: { ...rEdit, ganador_nombre: ganadorNombre }
+                                      });
+                                    }}
+                                    className="w-full h-8 px-2 border border-gh-border rounded bg-gh-bg-light text-[10px] text-gh-text focus:outline-none focus:border-wc-purple transition-all font-semibold cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                                  >
+                                    <option value="" disabled>Avanza</option>
+                                    <option value="local">{partido.local.split(' ')[0]}</option>
+                                    <option value="visita">{partido.visita.split(' ')[0]}</option>
+                                  </select>
+                                </div>
+                              );
+                           })()}
+                          
                           <div className="flex items-center gap-2">
                             <Button disabled={rEdit.cerrado} variant="neon-pink" size="sm" onClick={() => onSaveResultado(partido.id)} className="h-8"><Check size={14} className="mr-1" /> Cerrar y Guardar</Button>
                             {rEdit.cerrado && (
@@ -317,82 +349,48 @@ export default function GestorDashboard({
                           <div className="flex flex-col sm:flex-row gap-2 items-center">
                             {/* Local Select */}
                             <div className="w-36">
-                              <Select
-                                selectedKeys={uEdit.local ? new Set([uEdit.local]) : new Set()}
-                                onSelectionChange={(keys) => {
-                                  let val = '';
-                                  if (keys instanceof Set) val = [...keys][0];
-                                  else if (typeof keys === 'string' || typeof keys === 'number') val = keys;
+                              <select
+                                value={getCleanSelectKey(uEdit.local)}
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  const matchedTeam = candidatos.locales.find(t => getCleanSelectKey(t) === val);
                                   setUnconfirmedEquipos({
                                     ...unconfirmedEquipos,
-                                    [partido.id]: { ...uEdit, local: val }
+                                    [partido.id]: { ...uEdit, local: matchedTeam || '' }
                                   });
                                 }}
-                                placeholder="Selecciona Local"
-                                aria-label="Local"
-                                size="sm"
+                                className="w-full h-8 px-2 border border-gh-border rounded bg-gh-bg-light text-[10px] text-gh-text focus:outline-none focus:border-wc-purple transition-all font-semibold cursor-pointer"
                               >
-                                <Select.Trigger className="w-full h-8 px-2 border border-gh-border rounded bg-gh-bg-light text-[10px] text-gh-text transition-all">
-                                  <Select.Value />
-                                  <Select.Indicator className="text-gh-text-muted">
-                                    <ChevronDown size={12} className="transition-transform duration-200" />
-                                  </Select.Indicator>
-                                </Select.Trigger>
-                                <Select.Popover className="border border-gh-border bg-gh-bg-light rounded-lg shadow-xl overflow-hidden min-w-[120px] z-50">
-                                  <ListBox className="p-1 max-h-40 overflow-y-auto">
-                                    {candidatos.locales.map((team) => (
-                                      <ListBox.Item 
-                                        key={team} 
-                                        id={team} 
-                                        textValue={team}
-                                        className="px-2 py-1 rounded text-[10px] font-semibold text-gh-text hover:bg-wc-purple hover:text-white cursor-pointer transition-all"
-                                      >
-                                        {team}
-                                      </ListBox.Item>
-                                    ))}
-                                  </ListBox>
-                                </Select.Popover>
-                              </Select>
+                                <option value="" disabled>Selecciona Local</option>
+                                {candidatos.locales.map((team) => (
+                                  <option key={getCleanSelectKey(team)} value={getCleanSelectKey(team)}>
+                                    {team}
+                                  </option>
+                                ))}
+                              </select>
                             </div>
 
                             {/* Visita Select */}
                             <div className="w-36">
-                              <Select
-                                selectedKeys={uEdit.visita ? new Set([uEdit.visita]) : new Set()}
-                                onSelectionChange={(keys) => {
-                                  let val = '';
-                                  if (keys instanceof Set) val = [...keys][0];
-                                  else if (typeof keys === 'string' || typeof keys === 'number') val = keys;
+                              <select
+                                value={getCleanSelectKey(uEdit.visita)}
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  const matchedTeam = candidatos.visitas.find(t => getCleanSelectKey(t) === val);
                                   setUnconfirmedEquipos({
                                     ...unconfirmedEquipos,
-                                    [partido.id]: { ...uEdit, visita: val }
+                                    [partido.id]: { ...uEdit, visita: matchedTeam || '' }
                                   });
                                 }}
-                                placeholder="Selecciona Visita"
-                                aria-label="Visita"
-                                size="sm"
+                                className="w-full h-8 px-2 border border-gh-border rounded bg-gh-bg-light text-[10px] text-gh-text focus:outline-none focus:border-wc-purple transition-all font-semibold cursor-pointer"
                               >
-                                <Select.Trigger className="w-full h-8 px-2 border border-gh-border rounded bg-gh-bg-light text-[10px] text-gh-text transition-all">
-                                  <Select.Value />
-                                  <Select.Indicator className="text-gh-text-muted">
-                                    <ChevronDown size={12} className="transition-transform duration-200" />
-                                  </Select.Indicator>
-                                </Select.Trigger>
-                                <Select.Popover className="border border-gh-border bg-gh-bg-light rounded-lg shadow-xl overflow-hidden min-w-[120px] z-50">
-                                  <ListBox className="p-1 max-h-40 overflow-y-auto">
-                                    {candidatos.visitas.map((team) => (
-                                      <ListBox.Item 
-                                        key={team} 
-                                        id={team} 
-                                        textValue={team}
-                                        className="px-2 py-1 rounded text-[10px] font-semibold text-gh-text hover:bg-wc-purple hover:text-white cursor-pointer transition-all"
-                                      >
-                                        {team}
-                                      </ListBox.Item>
-                                    ))}
-                                  </ListBox>
-                                </Select.Popover>
-                              </Select>
+                                <option value="" disabled>Selecciona Visita</option>
+                                {candidatos.visitas.map((team) => (
+                                  <option key={getCleanSelectKey(team)} value={getCleanSelectKey(team)}>
+                                    {team}
+                                  </option>
+                                ))}
+                              </select>
                             </div>
 
                             <Button 

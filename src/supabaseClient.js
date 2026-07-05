@@ -21,15 +21,24 @@ export const clientState = {
 };
 
 // Partidos base de Octavos
+// Clean team names helper to ensure full compatibility
+export const cleanTeamName = (name) => {
+  if (!name) return '';
+  return name
+    .replace(/[\s\uD83C-\uDBFF\uDC00-\uDFFF]+/g, ' ')
+    .trim()
+    .replace(/\s+(FR|PY|CA|MA|BR|NO|MX|GB|BE|US|ES|PT|AR|EG|CH|CO)$/i, '');
+};
+
 export const PARTIDOS_BASE = [
-  { id: 'octavo_a', fecha: '4 Jul', hora: '16:00 HS', sede: 'Philadelphia Stadium (Lincoln Financial Field)', ciudad: 'Filadelfia, Pensilvania', pais: 'Estados Unidos', local: 'Francia 🇫🇷', visita: 'Paraguay 🇵🇾', confirmado: true },
-  { id: 'octavo_b', fecha: '4 Jul', hora: '20:00 HS', sede: 'Houston Stadium (NRG Stadium)', ciudad: 'Houston, Texas', pais: 'Estados Unidos', local: 'Canadá 🇨🇦', visita: 'Marruecos 🇲🇦', confirmado: true },
-  { id: 'octavo_c', fecha: '5 Jul', hora: '18:00 HS', sede: 'New York/New Jersey Stadium (MetLife Stadium)', ciudad: 'East Rutherford, Nueva Jersey', pais: 'Estados Unidos', local: 'Brasil 🇧🇷', visita: 'Noruega 🇳🇴', confirmado: true },
-  { id: 'octavo_d', fecha: '6 Jul', hora: '17:00 HS', sede: 'Mexico City Stadium (Estadio Azteca)', ciudad: 'Ciudad de México', pais: 'México', local: 'México 🇲🇽', visita: 'Inglaterra 🏴󠁧󠁢󠁥󠁮󠁧󠁿', confirmado: true },
-  { id: 'octavo_e', fecha: '6 Jul', hora: '21:00 HS', sede: 'Dallas Stadium (AT&T Stadium)', ciudad: 'Arlington, Texas', pais: 'Estados Unidos', local: 'España 🇪🇸', visita: 'Portugal 🇵🇹', confirmado: true },
-  { id: 'octavo_f', fecha: '7 Jul', hora: '15:00 HS', sede: 'Seattle Stadium (Lumen Field)', ciudad: 'Seattle, Washington', pais: 'Estados Unidos', local: 'Bélgica 🇧🇪', visita: 'USA 🇺🇸', confirmado: true },
-  { id: 'octavo_g', fecha: '7 Jul', hora: '19:00 HS', sede: 'Atlanta Stadium (Mercedes-Benz Stadium)', ciudad: 'Atlanta, Georgia', pais: 'Estados Unidos', local: 'Argentina 🇦🇷', visita: 'Egipto 🇪🇬', confirmado: true },
-  { id: 'octavo_h', fecha: '7 Jul', hora: '22:00 HS', sede: 'Vancouver Stadium (BC Place)', ciudad: 'Vancouver, Columbia Británica', pais: 'Canadá', local: 'Suiza 🇨🇭', visita: 'Colombia 🇨🇴', confirmado: true },
+  { id: 'octavo_a', fecha: '4 Jul', hora: '16:00 HS', sede: 'Philadelphia Stadium (Lincoln Financial Field)', ciudad: 'Filadelfia, Pensilvania', pais: 'Estados Unidos', local: 'Francia', visita: 'Paraguay', confirmado: true },
+  { id: 'octavo_b', fecha: '4 Jul', hora: '20:00 HS', sede: 'Houston Stadium (NRG Stadium)', ciudad: 'Houston, Texas', pais: 'Estados Unidos', local: 'Canadá', visita: 'Marruecos', confirmado: true },
+  { id: 'octavo_c', fecha: '5 Jul', hora: '18:00 HS', sede: 'New York/New Jersey Stadium (MetLife Stadium)', ciudad: 'East Rutherford, Nueva Jersey', pais: 'Estados Unidos', local: 'Brasil', visita: 'Noruega', confirmado: true },
+  { id: 'octavo_d', fecha: '6 Jul', hora: '17:00 HS', sede: 'Mexico City Stadium (Estadio Azteca)', ciudad: 'Ciudad de México', pais: 'México', local: 'México', visita: 'Inglaterra', confirmado: true },
+  { id: 'octavo_e', fecha: '6 Jul', hora: '21:00 HS', sede: 'Dallas Stadium (AT&T Stadium)', ciudad: 'Arlington, Texas', pais: 'Estados Unidos', local: 'España', visita: 'Portugal', confirmado: true },
+  { id: 'octavo_f', fecha: '7 Jul', hora: '15:00 HS', sede: 'Seattle Stadium (Lumen Field)', ciudad: 'Seattle, Washington', pais: 'Estados Unidos', local: 'Bélgica', visita: 'USA', confirmado: true },
+  { id: 'octavo_g', fecha: '7 Jul', hora: '19:00 HS', sede: 'Atlanta Stadium (Mercedes-Benz Stadium)', ciudad: 'Atlanta, Georgia', pais: 'Estados Unidos', local: 'Argentina', visita: 'Egipto', confirmado: true },
+  { id: 'octavo_h', fecha: '7 Jul', hora: '22:00 HS', sede: 'Vancouver Stadium (BC Place)', ciudad: 'Vancouver, Columbia Británica', pais: 'Canadá', local: 'Suiza', visita: 'Colombia', confirmado: true },
   
   // Cuartos de Final
   { id: 'cuartos_a', fecha: '9 Jul', hora: '18:00 HS', sede: 'Boston Stadium (Foxborough Stadium)', ciudad: 'Foxborough, Massachusetts', pais: 'Estados Unidos', local: 'Ganador Octavos A', visita: 'Ganador Octavos B', confirmado: false },
@@ -47,6 +56,88 @@ export const PARTIDOS_BASE = [
   // Final
   { id: 'final', fecha: '19 Jul', hora: '19:00 HS', sede: 'New York/New Jersey Stadium (MetLife Stadium)', ciudad: 'East Rutherford, Nueva Jersey', pais: 'Estados Unidos', local: 'Ganador Semifinal A', visita: 'Ganador Semifinal B', confirmado: false },
 ];
+
+export const resolverFixtureDinamico = (resultados) => {
+  // Empezar con una copia profunda de PARTIDOS_BASE
+  const partidos = JSON.parse(JSON.stringify(PARTIDOS_BASE));
+
+  // Mapa de dependencias: para cada partido que depende de resultados anteriores
+  const deps = {
+    'cuartos_a': { local: { de: 'octavo_a' }, visita: { de: 'octavo_b' } },
+    'cuartos_b': { local: { de: 'octavo_c' }, visita: { de: 'octavo_d' } },
+    'cuartos_c': { local: { de: 'octavo_e' }, visita: { de: 'octavo_f' } },
+    'cuartos_d': { local: { de: 'octavo_g' }, visita: { de: 'octavo_h' } },
+    
+    'semi_a': { local: { de: 'cuartos_a' }, visita: { de: 'cuartos_b' } },
+    'semi_b': { local: { de: 'cuartos_c' }, visita: { de: 'cuartos_d' } },
+    
+    'final': { local: { de: 'semi_a' }, visita: { de: 'semi_b' } },
+    'tercer_puesto': { local: { de: 'semi_a', tipo: 'perdedor' }, visita: { de: 'semi_b', tipo: 'perdedor' } }
+  };
+
+  const fasesOrden = ['cuartos_a', 'cuartos_b', 'cuartos_c', 'cuartos_d', 'semi_a', 'semi_b', 'final', 'tercer_puesto'];
+
+  fasesOrden.forEach(partidoId => {
+    const partido = partidos.find(p => p.id === partidoId);
+    if (!partido) return;
+
+    const dep = deps[partidoId];
+    if (!dep) return;
+
+    // Resolver Local
+    if (dep.local) {
+      const dePart = partidos.find(p => p.id === dep.local.de);
+      const res = resultados[dep.local.de];
+      if (dePart && res && res.cerrado) {
+        let ganador = res.ganador_nombre;
+        if (!ganador) {
+          const gL = parseInt(res.goles_local) || 0;
+          const gV = parseInt(res.goles_visita) || 0;
+          if (gL > gV) ganador = dePart.local;
+          else if (gL < gV) ganador = dePart.visita;
+        }
+        
+        if (dep.local.tipo === 'perdedor') {
+          const perdedor = ganador === dePart.local ? dePart.visita : dePart.local;
+          partido.local = perdedor;
+        } else {
+          partido.local = ganador;
+        }
+      }
+    }
+
+    // Resolver Visita
+    if (dep.visita) {
+      const dePart = partidos.find(p => p.id === dep.visita.de);
+      const res = resultados[dep.visita.de];
+      if (dePart && res && res.cerrado) {
+        let ganador = res.ganador_nombre;
+        if (!ganador) {
+          const gL = parseInt(res.goles_local) || 0;
+          const gV = parseInt(res.goles_visita) || 0;
+          if (gL > gV) ganador = dePart.local;
+          else if (gL < gV) ganador = dePart.visita;
+        }
+        
+        if (dep.visita.tipo === 'perdedor') {
+          const perdedor = ganador === dePart.local ? dePart.visita : dePart.local;
+          partido.visita = perdedor;
+        } else {
+          partido.visita = ganador;
+        }
+      }
+    }
+
+    // Confirmar partido si tiene ambos equipos definidos y no son genéricos
+    if (partido.local && partido.visita &&
+        !partido.local.includes('Ganador') && !partido.visita.includes('Ganador') &&
+        !partido.local.includes('Perdedor') && !partido.visita.includes('Perdedor')) {
+      partido.confirmado = true;
+    }
+  });
+
+  return partidos;
+};
 
 // Reglas del Sistema de Puntos
 export const REGLAS_PUNTOS = {
@@ -782,28 +873,29 @@ export const db = {
 
   // --- PARTIDOS Y CONFIRMACIONES ---
   async getPartidos() {
+    let rawPartidos = [];
     if (clientState.isMock) {
-      return getLocalData('pb_partidos_estados');
+      rawPartidos = getLocalData('pb_partidos_estados') || [];
     } else {
-      // En Supabase, podemos tener una tabla de partidos o los guardamos como estado en la app.
-      // Para consistencia con resultados oficiales, guardamos los partidos base y cruzamos "confirmado" 
-      // si tenemos una columna en base de datos. Para mantenerlo ultra-simple, el admin puede confirmarlos.
-      // Dejaremos que el estado de confirmación se derive de si están guardados en Supabase o usaremos
-      // una tabla de partidos en Supabase si es necesario, o simplemente el Mock responde desde LocalStorage.
-      // Implementemos una lógica donde consultamos la tabla 'resultados' para saber si se confirma.
-      // O para facilidad total, retornamos PARTIDOS_BASE actualizados según el estado persistido.
       const { data: dbResultados } = await supabase.from('resultados').select('*');
       
-      return PARTIDOS_BASE.map(p => {
-        const res = dbResultados?.find(r => r.partido_id === p.id);
-        // Si el resultado existe, el partido está confirmado y opcionalmente cerrado
-        return {
-          ...p,
-          // Si el admin guarda el resultado, o si se actualiza, lo marcamos confirmado
-          confirmado: p.confirmado || (res ? true : false)
+      const resultadosMap = {};
+      dbResultados?.forEach(r => {
+        resultadosMap[r.partido_id] = {
+          goles_local: r.goles_local,
+          goles_visita: r.goles_visita,
+          cerrado: r.cerrado,
+          ganador_nombre: cleanTeamName(r.ganador_nombre)
         };
       });
+
+      rawPartidos = resolverFixtureDinamico(resultadosMap);
     }
+    return rawPartidos.map(p => ({
+      ...p,
+      local: cleanTeamName(p.local),
+      visita: cleanTeamName(p.visita)
+    }));
   },
 
   async confirmarPartido(partidoId, localNombre, visitaNombre) {
@@ -894,8 +986,9 @@ export const db = {
 
   // --- RESULTADOS OFICIALES ---
   async getResultados() {
+    let rawResultados = {};
     if (clientState.isMock) {
-      return getLocalData('pb_resultados');
+      rawResultados = getLocalData('pb_resultados') || {};
     } else {
       const { data, error } = await supabase
         .from('resultados')
@@ -908,11 +1001,21 @@ export const db = {
         resObj[r.partido_id] = {
           goles_local: r.goles_local,
           goles_visita: r.goles_visita,
-          cerrado: r.cerrado
+          cerrado: r.cerrado,
+          ganador_nombre: r.ganador_nombre
         };
       });
-      return resObj;
+      rawResultados = resObj;
     }
+    
+    const cleaned = {};
+    for (const key in rawResultados) {
+      cleaned[key] = {
+        ...rawResultados[key],
+        ganador_nombre: cleanTeamName(rawResultados[key]?.ganador_nombre)
+      };
+    }
+    return cleaned;
   },
 
   async saveResultado(partidoId, golesLocal, golesVisita, cerrado = false, ganadorNombre = null) {
@@ -923,7 +1026,7 @@ export const db = {
         goles_local: golesLocal === '' ? null : parseInt(golesLocal),
         goles_visita: golesVisita === '' ? null : parseInt(golesVisita),
         cerrado: cerrado,
-        ganador_nombre: ganadorNombre,
+        ganador_nombre: cleanTeamName(ganadorNombre),
         fecha_cierre: cerrado ? new Date().toISOString() : null
       };
       
@@ -959,7 +1062,7 @@ export const db = {
           goles_local: golesLocal === '' ? null : parseInt(golesLocal),
           goles_visita: golesVisita === '' ? null : parseInt(golesVisita),
           cerrado: cerrado,
-          ganador_nombre: ganadorNombre,
+          ganador_nombre: cleanTeamName(ganadorNombre),
           fecha_cierre: cerrado ? new Date().toISOString() : null
         }, { onConflict: 'partido_id' })
         .select()

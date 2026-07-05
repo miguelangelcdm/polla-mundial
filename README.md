@@ -165,3 +165,17 @@ Si deseas probar la base de datos real localmente antes de subir a Netlify:
 > 4. **Navegación Lateral Unificada**: Tanto los Master como los Gestores de Familia tienen su navegación centralizada en el menú lateral izquierdo (Sidebar) en ordenadores, y mediante pestañas dedicadas en la barra inferior en móviles, eliminando los switchers duplicados de la cabecera.
 
 
+---
+
+## 🛠️ Resiliencia en Selección de Ganadores y Progresión del Fixture (Julio 2026)
+
+Para garantizar que los administradores no pierdan los valores seleccionados de los clasificados en las llaves eliminatorias al refrescar la página, se implementó un sistema de emparejamiento tolerante a formatos:
+
+1. **Normalizador de Equipos (`cleanTeamName`)**:
+   - Resuelve discrepancias ortográficas, de banderas unicode y códigos de país entre distintas bases de datos (ej. compara de manera equivalente `'Francia 🇫🇷'`, `'Francia FR'` y `'Francia'` convirtiéndolas de forma segura a `'francia'`).
+   - El helper está disponible de forma centralizada en [src/supabaseClient.js](file:///c:/Users/migue/Documents/Projects/pollon-alejos/src/supabaseClient.js) y se utiliza automáticamente al mapear datos entrantes y salientes.
+
+2. **Selects Nativos de Alta Fiabilidad (Migración Global)**:
+   - Se reemplazaron **todos los selectores del sistema** (selector de ganador en partidos jugados, selector de local/visita en partidos por confirmar, selector móvil de pestañas, y selectores de familias en logs y puntuaciones) por elementos nativos HTML `<select>` estilizados con CSS y variables modernas.
+   - Esto erradica por completo la pérdida de valores debido a la desestructuración de los portales de React Aria cuando los dropdowns están cerrados al renderizar el componente.
+   - La solución fue verificada mediante pruebas E2E con **Playwright** en Chromium, garantizando la persistencia e integridad de todo el flujo tras recargas y logueos.

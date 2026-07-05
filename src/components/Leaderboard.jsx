@@ -108,7 +108,7 @@ export default function Leaderboard({ tablaPosiciones, currentUserId }) {
                       {/* Nombre / Username */}
                       <div className="flex flex-col">
                         <div className="flex items-center gap-1.5">
-                          <span className="text-white font-medium text-xs">{row.nombre}</span>
+                          <span className="text-gh-text font-medium text-xs">{row.nombre}</span>
                           {esTu && (
                             <span className="px-1.5 py-0.2 bg-wc-green/10 border border-wc-green/40 rounded-sm text-[9px] text-wc-green font-extrabold tracking-widest leading-none">
                               TÚ
@@ -123,11 +123,11 @@ export default function Leaderboard({ tablaPosiciones, currentUserId }) {
                     <div className="flex items-center gap-4 text-right">
                       <div className="flex flex-col items-center">
                         <span className="text-[9px] text-gh-text-muted uppercase font-bold">Exac</span>
-                        <span className="font-bold text-white">{row.exactos}</span>
+                        <span className="font-bold text-gh-text">{row.exactos}</span>
                       </div>
                       <div className="flex flex-col items-center">
                         <span className="text-[9px] text-gh-text-muted uppercase font-bold">Gan</span>
-                        <span className="font-bold text-white">{row.ganador}</span>
+                        <span className="font-bold text-gh-text">{row.ganador}</span>
                       </div>
                       <div className="pl-3 border-l border-gh-border/50 flex flex-col items-center">
                         <span className="text-[9px] text-wc-green uppercase font-bold">Pts</span>

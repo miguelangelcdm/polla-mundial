@@ -48,8 +48,17 @@ export default function App() {
   const [currentUser, setCurrentUser] = useState(null);
   
   // --- NAVEGACIÓN ---
-  const [activeTab, setActiveTab] = useState('predicciones');
-  const [activeAdminTab, setActiveAdminTab] = useState('predicciones');
+  const [activeTab, setActiveTab] = useState(() => localStorage.getItem('pb_active_tab') || 'predicciones');
+  const [activeAdminTab, setActiveAdminTab] = useState(() => localStorage.getItem('pb_active_admin_tab') || 'predicciones');
+
+  // Sincronizar navegación activa con localStorage
+  useEffect(() => {
+    localStorage.setItem('pb_active_tab', activeTab);
+  }, [activeTab]);
+
+  useEffect(() => {
+    localStorage.setItem('pb_active_admin_tab', activeAdminTab);
+  }, [activeAdminTab]);
 
   // --- ESTADOS DE NEGOCIO ---
   const [partidos, setPartidos] = useState([]);
@@ -83,9 +92,9 @@ export default function App() {
   }, [currentUser]);
 
   // --- CARGAR DATOS PRINCIPALES ---
-  const cargarDatosApp = useCallback(async (user) => {
+  const cargarDatosApp = useCallback(async (user, isSilent = false) => {
     const activeUser = user || currentUserRef.current;
-    if (!activeUser) return;
+    if (!activeUser) return null;
     try {
       const listPartidos = await db.getPartidos();
       setPartidos(listPartidos);
@@ -93,20 +102,33 @@ export default function App() {
       const resOficiales = await db.getResultados();
       setResultados(resOficiales);
       
-      const initResEdicion = {};
-      listPartidos.forEach(p => {
-        initResEdicion[p.id] = {
-          goles_local: resOficiales[p.id]?.goles_local !== undefined ? resOficiales[p.id].goles_local : '',
-          goles_visita: resOficiales[p.id]?.goles_visita !== undefined ? resOficiales[p.id].goles_visita : '',
-          cerrado: resOficiales[p.id]?.cerrado || false,
-          ganador_nombre: resOficiales[p.id]?.ganador_nombre || ''
-        };
-      });
-      setResultadoEdicion(initResEdicion);
+      setResultadoEdicion(prevEdicion => {
+        const nextEdicion = {};
+        listPartidos.forEach(p => {
+          const currentEdit = prevEdicion[p.id];
+          const dbLocal = resOficiales[p.id]?.goles_local !== undefined ? resOficiales[p.id].goles_local : '';
+          const dbVisita = resOficiales[p.id]?.goles_visita !== undefined ? resOficiales[p.id].goles_visita : '';
+          const dbCerrado = resOficiales[p.id]?.cerrado || false;
+          const dbGanador = resOficiales[p.id]?.ganador_nombre || '';
 
+          if (isSilent && currentEdit) {
+            nextEdicion[p.id] = currentEdit;
+          } else {
+            nextEdicion[p.id] = {
+              goles_local: dbLocal,
+              goles_visita: dbVisita,
+              cerrado: dbCerrado,
+              ganador_nombre: dbGanador
+            };
+          }
+        });
+        return nextEdicion;
+      });
+
+      let predsObj = {};
+      let tabla = [];
       if (!activeUser.es_master) {
         const listPreds = await db.getPredicciones(activeUser.id);
-        const predsObj = {};
         listPreds.forEach(p => {
           predsObj[p.partido_id] = {
             goles_local: p.goles_local === null ? '' : p.goles_local,
@@ -116,23 +138,41 @@ export default function App() {
         setPredicciones(predsObj);
         
         if (activeUser.grupo_id) {
-          const tabla = await db.getTablaPosiciones(activeUser.grupo_id);
+          tabla = await db.getTablaPosiciones(activeUser.grupo_id);
           setTablaPosiciones(tabla);
         }
       }
 
-      if (activeUser.es_admin || activeUser.es_master) {
-        const grupos = await db.getGrupos();
-        setGruposList(grupos);
-        
-        const usuarios = await db.getUsuarios();
-        setUsuariosList(usuarios);
+      let grupos = [];
+      let usuarios = [];
+      let allPreds = [];
 
-        const allPreds = await db.getAllPredicciones();
-        setAllPredicciones(allPreds);
+      // Siempre obtener la lista de usuarios y todas las predicciones para el panel de "Pronósticos en Vivo"
+      usuarios = await db.getUsuarios();
+      setUsuariosList(usuarios);
+
+      allPreds = await db.getAllPredicciones();
+      setAllPredicciones(allPreds);
+
+      if (activeUser.es_admin || activeUser.es_master) {
+        grupos = await db.getGrupos();
+        setGruposList(grupos);
       }
+
+      return {
+        partidos: listPartidos,
+        resultados: resOficiales,
+        predicciones: predsObj,
+        tablaPosiciones: tabla,
+        usuariosList: usuarios,
+        allPredicciones: allPreds,
+        gruposList: grupos
+      };
     } catch (err) {
-      sileo.error({ title: "Error al cargar datos", description: err.message });
+      if (!isSilent) {
+        sileo.error({ title: "Error al cargar datos", description: err.message });
+      }
+      return null;
     }
   }, []);
 
@@ -153,14 +193,17 @@ export default function App() {
         try {
           const freshUser = await db.login(u.username, cachedPass);
           localStorage.setItem('pb_session_user', JSON.stringify(freshUser));
+           const cachedTab = localStorage.getItem('pb_active_tab');
+          const cachedAdminTab = localStorage.getItem('pb_active_admin_tab');
+
           if (freshUser.es_master) {
-            setActiveTab('master');
-            setActiveAdminTab('grupos_master');
+            setActiveTab(cachedTab || 'master');
+            setActiveAdminTab(cachedAdminTab || 'grupos_master');
           } else if (freshUser.es_admin) {
-            setActiveTab('admin');
-            setActiveAdminTab('predicciones');
+            setActiveTab(cachedTab || 'admin');
+            setActiveAdminTab(cachedAdminTab || 'predicciones');
           } else {
-            setActiveTab('predicciones');
+            setActiveTab(cachedTab || 'predicciones');
           }
           setCurrentUser(freshUser);
           // cargarDatosApp is defined above — safe to call here
@@ -174,6 +217,17 @@ export default function App() {
     };
     conectar();
   }, [cargarDatosApp]);
+ 
+  // Polling para mantener actualizados los datos en tiempo real (cada 10 segundos) de forma silenciosa
+  useEffect(() => {
+    if (!currentUser) return;
+
+    const interval = setInterval(() => {
+      cargarDatosApp(null, true);
+    }, 10000); // 10 segundos
+
+    return () => clearInterval(interval);
+  }, [currentUser, cargarDatosApp]);
 
   // Recargar datos cuando hay acciones del usuario (save, toggle, etc.)
   // NOTE: login/register flows call cargarDatosApp(user) directly with fresh user
@@ -294,6 +348,7 @@ export default function App() {
     }
     setLoading(true);
     try {
+      await cargarDatosApp(null, true); // Fetchear actualizaciones primero
       const u = await db.joinGroup(currentUser.id, onboardingGroupCode);
       setCurrentUser(u);
       localStorage.setItem('pb_session_user', JSON.stringify(u));
@@ -315,6 +370,7 @@ export default function App() {
     }
     setLoading(true);
     try {
+      await cargarDatosApp(null, true); // Fetchear actualizaciones primero
       const u = await db.createGroupForGestor(currentUser.id, onboardingGroupName);
       setCurrentUser(u);
       localStorage.setItem('pb_session_user', JSON.stringify(u));
@@ -334,12 +390,15 @@ export default function App() {
     setCurrentUser(null);
     localStorage.removeItem('pb_session_user');
     localStorage.removeItem('pb_session_pass');
+    localStorage.removeItem('pb_active_tab');
+    localStorage.removeItem('pb_active_admin_tab');
     setLoginForm({ username: '', password: '' });
     setJoinForm({ nombre: '', username: '', password: '', codigoGrupo: '' });
     setCreateForm({ nombre: '', username: '', password: '', nombreGrupo: '' });
     setOnboardingGroupName('');
     setOnboardingGroupCode('');
     setActiveTab('predicciones');
+    setActiveAdminTab('predicciones');
     sileo.success({ title: "Sesión cerrada correctamente" });
   };
 
@@ -347,11 +406,17 @@ export default function App() {
   const handleSavePredicciones = async () => {
     setLoading(true);
     try {
+      const freshData = await cargarDatosApp(null, true); // Fetchear actualizaciones primero
+      if (!freshData) {
+        sileo.error({ title: "Error al verificar el estado de los partidos antes de guardar." });
+        return;
+      }
+
       let guardados = 0;
-      for (const partido of partidos) {
+      for (const partido of freshData.partidos) {
         if (!partido.confirmado) continue;
         
-        const resOficial = resultados[partido.id];
+        const resOficial = freshData.resultados[partido.id];
         if (resOficial && resOficial.cerrado) continue;
 
         const pred = predicciones[partido.id];
@@ -366,7 +431,7 @@ export default function App() {
 
       if (guardados > 0) {
         sileo.success({ title: `¡Predicciones guardadas!`, description: `Se actualizaron ${guardados} predicciones.` });
-        cargarDatosApp();
+        await cargarDatosApp();
       } else {
         sileo.error({ title: "No hay predicciones válidas para guardar" });
       }
@@ -376,6 +441,7 @@ export default function App() {
       setLoading(false);
     }
   };
+
   // Guardar Predicción Individual (Tile 2)
   const handleSaveSinglePrediction = async (partidoId, golesLocal, golesVisita) => {
     if (golesLocal === '' || golesVisita === '' || golesLocal === undefined || golesVisita === undefined) {
@@ -384,6 +450,15 @@ export default function App() {
     }
     setLoading(true);
     try {
+      const freshData = await cargarDatosApp(null, true); // Fetchear actualizaciones primero
+      if (freshData) {
+        const matchRes = freshData.resultados[partidoId];
+        if (matchRes && matchRes.cerrado) {
+          sileo.error({ title: "El partido ya está cerrado para predicciones." });
+          return;
+        }
+      }
+
       await db.savePrediccion(currentUser.id, partidoId, Number(golesLocal), Number(golesVisita));
       sileo.success({ title: "Pronóstico guardado", description: "Tu predicción se ha registrado con éxito." });
       await cargarDatosApp();
@@ -409,9 +484,18 @@ export default function App() {
       return;
     }
 
+    let finalGanador = rEdit.ganador_nombre;
+    if (!finalGanador && gL !== gV) {
+      const match = partidos.find(p => p.id === partidoId);
+      if (match) {
+        finalGanador = gL > gV ? match.local : match.visita;
+      }
+    }
+
     setLoading(true);
     try {
-      await db.saveResultado(partidoId, rEdit.goles_local, rEdit.goles_visita, true, rEdit.ganador_nombre || null);
+      await cargarDatosApp(null, true); // Fetchear actualizaciones primero
+      await db.saveResultado(partidoId, rEdit.goles_local, rEdit.goles_visita, true, finalGanador || null);
       sileo.success({ title: "Resultado cargado", description: "El partido ha sido cerrado y los puntos recalculados." });
       await cargarDatosApp();
     } catch (err) {
@@ -425,6 +509,7 @@ export default function App() {
   const handleAbrirPartido = async (partidoId) => {
     setLoading(true);
     try {
+      await cargarDatosApp(null, true); // Fetchear actualizaciones primero
       const rEdit = resultadoEdicion[partidoId];
       await db.saveResultado(partidoId, rEdit.goles_local || 0, rEdit.goles_visita || 0, false);
       sileo.success({ title: "Partido reabierto para predicciones" });
@@ -445,6 +530,7 @@ export default function App() {
     }
     setLoading(true);
     try {
+      await cargarDatosApp(null, true); // Fetchear actualizaciones primero
       const g = await db.createGroupDirectly(nuevoGrupoNombre);
       sileo.success({ title: `Grupo creado`, description: `Código: ${g.codigo}` });
       setNuevoGrupoNombre('');
@@ -460,6 +546,7 @@ export default function App() {
   const handleToggleUserAdmin = async (usuarioId, esAdmin) => {
     setLoading(true);
     try {
+      await cargarDatosApp(null, true); // Fetchear actualizaciones primero
       await db.toggleUserAdmin(usuarioId, esAdmin);
       sileo.success({ title: esAdmin ? "Usuario promovido a Gestor con éxito" : "Rol de Gestor removido" });
       await cargarDatosApp();
@@ -474,6 +561,7 @@ export default function App() {
   const handleSuspendUser = async (usuarioId, suspendido) => {
     setLoading(true);
     try {
+      await cargarDatosApp(null, true); // Fetchear actualizaciones primero
       await db.suspendUser(usuarioId, suspendido);
       sileo.success({ title: suspendido ? "Usuario suspendido correctamente" : "Usuario activado correctamente" });
       await cargarDatosApp();
@@ -491,6 +579,7 @@ export default function App() {
     }
     setLoading(true);
     try {
+      await cargarDatosApp(null, true); // Fetchear actualizaciones primero
       await db.deleteUser(usuarioId);
       sileo.success({ title: `Miembro "${nombre}" eliminado con éxito` });
       await cargarDatosApp();
@@ -509,11 +598,30 @@ export default function App() {
     }
     setLoading(true);
     try {
+      await cargarDatosApp(null, true); // Fetchear actualizaciones primero
       await db.confirmarPartido(partidoId, local, visita);
       sileo.success({ title: "Equipos confirmados", description: "El partido está abierto para predicciones." });
       await cargarDatosApp();
     } catch (err) {
       sileo.error({ title: "Error al confirmar", description: err.message });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Guardar Predicción de un Usuario de parte de Master (permite editar cualquier partido cerrado/abierto)
+  const handleMasterSaveUserPrediction = async (usuarioId, partidoId, golesLocal, golesVisita) => {
+    if (golesLocal === '' || golesVisita === '' || golesLocal === undefined || golesVisita === undefined) {
+      sileo.error({ title: "Ingresa un marcador válido" });
+      return;
+    }
+    setLoading(true);
+    try {
+      await db.savePrediccion(usuarioId, partidoId, Number(golesLocal), Number(golesVisita));
+      sileo.success({ title: "Pronóstico modificado", description: "El pronóstico del usuario ha sido modificado con éxito por el Master." });
+      await cargarDatosApp();
+    } catch (err) {
+      sileo.error({ title: "Error al modificar pronóstico", description: err.message });
     } finally {
       setLoading(false);
     }
@@ -800,6 +908,7 @@ export default function App() {
                     onAbrirPartido={handleAbrirPartido}
                     onConfirmarPartidoPendiente={handleConfirmarPartidoPendiente}
                     copyToClipboard={copyToClipboard}
+                    onSaveUserPrediction={handleMasterSaveUserPrediction}
                   />
                 )}
               </>

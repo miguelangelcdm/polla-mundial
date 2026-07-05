@@ -2,17 +2,31 @@ import React, { useState, useMemo } from 'react';
 import { sileo } from 'sileo';
 import { Crown, Globe, Trophy, Plus, Copy, Crown as CrownIcon, Info, Check, ChevronDown } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from './ui/card';
-import { Tabs, Table, Select, ListBox } from '@heroui/react';
+import { Tabs, Table } from '@heroui/react';
 import { Input } from './ui/input';
 import { Button } from './ui/button';
 import { calcularPuntosPartido, REGLAS_PUNTOS } from '../supabaseClient';
 
+const getCleanSelectKey = (name) => {
+  if (!name) return '';
+  return name.replace(/[\s\uD83C-\uDBFF\uDC00-\uDFFF]+/g, '');
+};
+
+const cleanTeamName = (name) => {
+  if (!name) return '';
+  return name
+    .toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[\s\uD83C-\uDBFF\uDC00-\uDFFF]+/g, '')
+    .replace(/(fr|py|ca|ma|br|no|mx|gb|be|us|es|pt|ar|eg|ch|co)$/i, '');
+};
+
 const OBTENER_CANDIDATOS = (partidoId, partidos) => {
   const todosEquipos = [
-    'Canadá 🇨🇦', 'Marruecos 🇲🇦', 'Brasil 🇧🇷', 'Noruega 🇳🇴',
-    'Francia 🇫🇷', 'Paraguay 🇵🇾', 'México 🇲🇽', 'Inglaterra 🏴',
-    'Bélgica 🇧🇪', 'USA 🇺🇸', 'España 🇪🇸', 'Portugal 🇵🇹',
-    'Argentina 🇦🇷', 'Colombia 🇨🇴', 'Suiza 🇨🇭', 'Australia 🇦🇺'
+    'Canadá', 'Marruecos', 'Brasil', 'Noruega',
+    'Francia', 'Paraguay', 'México', 'Inglaterra',
+    'Bélgica', 'USA', 'España', 'Portugal',
+    'Argentina', 'Colombia', 'Suiza', 'Australia'
   ];
 
   if (partidoId === 'octavo_f' || partidoId === 'octavo_g' || partidoId === 'octavo_h') {
@@ -85,10 +99,46 @@ export default function MasterDashboard({
   onSaveResultado,
   onAbrirPartido,
   onConfirmarPartidoPendiente,
-  copyToClipboard
+  copyToClipboard,
+  onSaveUserPrediction
 }) {
   const [selectedGroupId, setSelectedGroupId] = useState('');
   const [unconfirmedEquipos, setUnconfirmedEquipos] = useState({});
+  const [selectedUserForPreds, setSelectedUserForPreds] = useState(null);
+  const [editingPreds, setEditingPreds] = useState({});
+
+  const handleStartEditPredicciones = (user) => {
+    setSelectedUserForPreds(user);
+    const predsObj = {};
+    partidos.forEach(partido => {
+      const pred = allPredicciones?.find(p => p.usuario_id === user.id && p.partido_id === partido.id);
+      predsObj[partido.id] = {
+        goles_local: pred?.goles_local !== undefined && pred?.goles_local !== null ? String(pred.goles_local) : '',
+        goles_visita: pred?.goles_visita !== undefined && pred?.goles_visita !== null ? String(pred.goles_visita) : ''
+      };
+    });
+    setEditingPreds(predsObj);
+  };
+
+  const handleEditChange = (partidoId, field, value) => {
+    setEditingPreds(prev => ({
+      ...prev,
+      [partidoId]: {
+        ...prev[partidoId],
+        [field]: value
+      }
+    }));
+  };
+
+  const handleSavePredictionClick = (partidoId) => {
+    if (!selectedUserForPreds) return;
+    const pred = editingPreds[partidoId];
+    if (pred.goles_local === '' || pred.goles_visita === '') {
+      sileo.error({ title: "Ingresa un marcador válido antes de guardar." });
+      return;
+    }
+    onSaveUserPrediction(selectedUserForPreds.id, partidoId, pred.goles_local, pred.goles_visita);
+  };
 
   const auditLogs = useMemo(() => {
     if (!selectedGroupId) return [];
@@ -165,33 +215,18 @@ export default function MasterDashboard({
           
           {/* Responsive Select (Mobile only) */}
           <div className="block md:hidden mb-4">
-            <Select
-              selectedKeys={new Set([activeAdminTab])}
-              onSelectionChange={(keys) => {
-                let val = '';
-                if (keys instanceof Set) val = [...keys][0];
-                else if (typeof keys === 'string' || typeof keys === 'number') val = keys;
-                if (val) setActiveAdminTab(val.toString());
-              }}
+            <select
+              value={activeAdminTab}
+              onChange={(e) => setActiveAdminTab(e.target.value)}
               aria-label="Seleccionar Sección"
-              size="sm"
+              className="w-full h-10 px-3 border border-gh-border rounded-lg bg-gh-bg-light font-sans text-xs text-gh-text focus:outline-none focus:border-wc-purple transition-all font-semibold cursor-pointer"
             >
-              <Select.Trigger className="w-full h-10 px-3 border border-gh-border rounded-lg flex items-center justify-between bg-gh-bg-light font-sans text-xs text-gh-text transition-all">
-                <Select.Value />
-                <Select.Indicator className="text-gh-text-muted">
-                <ChevronDown size={12} className="transition-transform duration-200" />
-              </Select.Indicator>
-              </Select.Trigger>
-              <Select.Popover className="border border-gh-border bg-gh-bg-light rounded-lg shadow-xl overflow-hidden min-w-[200px] z-50">
-                <ListBox className="p-1">
-                  <ListBox.Item key="grupos_master" id="grupos_master" className="px-3 py-1.5 text-xs text-gh-text font-bold">GRUPOS GLOBALES</ListBox.Item>
-                  <ListBox.Item key="gestores_master" id="gestores_master" className="px-3 py-1.5 text-xs text-gh-text font-bold">ASIGNAR GESTORES</ListBox.Item>
-                  <ListBox.Item key="resultados" id="resultados" className="px-3 py-1.5 text-xs text-gh-text font-bold">RESULTADOS OFICIALES</ListBox.Item>
-                  <ListBox.Item key="puntuaciones" id="puntuaciones" className="px-3 py-1.5 text-xs text-gh-text font-bold">PUNTUACIONES</ListBox.Item>
-                  <ListBox.Item key="logs" id="logs" className="px-3 py-1.5 text-xs text-gh-text font-bold">LOGS DE PUNTOS</ListBox.Item>
-                </ListBox>
-              </Select.Popover>
-            </Select>
+              <option value="grupos_master">GRUPOS GLOBALES</option>
+              <option value="gestores_master">ASIGNAR GESTORES</option>
+              <option value="resultados">RESULTADOS OFICIALES</option>
+              <option value="puntuaciones">PUNTUACIONES</option>
+              <option value="logs">LOGS DE PUNTOS</option>
+            </select>
           </div>
 
           {/* Sticky Sidebar List (Desktop only) */}
@@ -294,7 +329,7 @@ export default function MasterDashboard({
   <Table.ScrollContainer>
     <Table.Content aria-label="Lista de grupos">
       <Table.Header>
-        <Table.Column>Código</Table.Column>
+        <Table.Column isRowHeader>Código</Table.Column>
         <Table.Column>Nombre</Table.Column>
         <Table.Column>Creado</Table.Column>
         <Table.Column>Participantes</Table.Column>
@@ -349,7 +384,7 @@ export default function MasterDashboard({
   <Table.ScrollContainer>
     <Table.Content aria-label="Lista de usuarios">
       <Table.Header>
-        <Table.Column>Nombre</Table.Column>
+        <Table.Column isRowHeader>Nombre</Table.Column>
         <Table.Column>Usuario</Table.Column>
         <Table.Column>Grupo</Table.Column>
         <Table.Column>Rol</Table.Column>
@@ -461,9 +496,16 @@ export default function MasterDashboard({
                               value={rEdit.goles_local}
                               onChange={(e) => {
                                 const val = e.target.value === '' ? '' : parseInt(e.target.value);
+                                const gV = rEdit.goles_visita !== '' ? parseInt(rEdit.goles_visita) : NaN;
+                                let newGanador = rEdit.ganador_nombre || '';
+                                if (val !== '' && !isNaN(gV)) {
+                                  if (val > gV) newGanador = partido.local;
+                                  else if (val < gV) newGanador = partido.visita;
+                                  else newGanador = '';
+                                }
                                 setResultadoEdicion({
                                   ...resultadoEdicion,
-                                  [partido.id]: { ...rEdit, goles_local: val }
+                                  [partido.id]: { ...rEdit, goles_local: val, ganador_nombre: newGanador }
                                 });
                               }}
                               placeholder="Local"
@@ -476,9 +518,16 @@ export default function MasterDashboard({
                               value={rEdit.goles_visita}
                               onChange={(e) => {
                                 const val = e.target.value === '' ? '' : parseInt(e.target.value);
+                                const gL = rEdit.goles_local !== '' ? parseInt(rEdit.goles_local) : NaN;
+                                let newGanador = rEdit.ganador_nombre || '';
+                                if (val !== '' && !isNaN(gL)) {
+                                  if (gL > val) newGanador = partido.local;
+                                  else if (gL < val) newGanador = partido.visita;
+                                  else newGanador = '';
+                                }
                                 setResultadoEdicion({
                                   ...resultadoEdicion,
-                                  [partido.id]: { ...rEdit, goles_visita: val }
+                                  [partido.id]: { ...rEdit, goles_visita: val, ganador_nombre: newGanador }
                                 });
                               }}
                               placeholder="Visita"
@@ -487,51 +536,56 @@ export default function MasterDashboard({
                           </div>
 
                           {/* Dropdown Ganador */}
-                          <div className="w-32">
-                            <Select
-                              selectedKeys={rEdit.ganador_nombre ? new Set([rEdit.ganador_nombre]) : new Set()}
-                              onSelectionChange={(keys) => {
-                                let val = '';
-                                if (keys instanceof Set) val = [...keys][0];
-                                else if (typeof keys === 'string' || typeof keys === 'number') val = keys;
-                                setResultadoEdicion({
-                                  ...resultadoEdicion,
-                                  [partido.id]: { ...rEdit, ganador_nombre: val }
-                                });
-                              }}
-                              placeholder="Avanza"
-                              aria-label="Ganador"
-                              disabled={rEdit.cerrado}
-                              size="sm"
-                            >
-                              <Select.Trigger className="w-full h-8 px-2 border border-gh-border rounded bg-gh-bg-light text-[10px] text-gh-text transition-all">
-                                <Select.Value />
-                                <Select.Indicator className="text-gh-text-muted">
-                                  <ChevronDown size={12} className="transition-transform duration-200" />
-                                </Select.Indicator>
-                              </Select.Trigger>
-                              <Select.Popover className="border border-gh-border bg-gh-bg-light rounded-lg shadow-xl overflow-hidden min-w-[120px] z-50">
-                                <ListBox className="p-1">
-                                  <ListBox.Item 
-                                    key={partido.local} 
-                                    id={partido.local} 
-                                    textValue={partido.local}
-                                    className="px-2 py-1 rounded text-[10px] font-semibold text-gh-text hover:bg-wc-purple hover:text-white cursor-pointer transition-all"
+                          {(() => {
+                             const currentWinnerName = rEdit.ganador_nombre || (() => {
+                               const gL = rEdit.goles_local !== '' ? parseInt(rEdit.goles_local) : NaN;
+                               const gV = rEdit.goles_visita !== '' ? parseInt(rEdit.goles_visita) : NaN;
+                               if (!isNaN(gL) && !isNaN(gV) && gL !== gV) {
+                                 return gL > gV ? partido.local : partido.visita;
+                               }
+                               return '';
+                             })();
+
+                             let selectedDropdownKey = '';
+                             if (cleanTeamName(currentWinnerName) === cleanTeamName(partido.local)) {
+                               selectedDropdownKey = 'local';
+                             } else if (cleanTeamName(currentWinnerName) === cleanTeamName(partido.visita)) {
+                               selectedDropdownKey = 'visita';
+                             }
+
+                             console.log("DEBUG_WINNER:", partido.id, {
+                               currentWinnerName,
+                               partidoLocal: partido.local,
+                               selectedDropdownKey,
+                               cerrado: rEdit.cerrado
+                             });
+
+                             return (
+                                <div className="w-32">
+                                  <select
+                                    value={selectedDropdownKey}
+                                    disabled={rEdit.cerrado}
+                                    aria-label="Ganador"
+                                    onChange={(e) => {
+                                      const val = e.target.value;
+                                      let ganadorNombre = '';
+                                      if (val === 'local') ganadorNombre = partido.local;
+                                      else if (val === 'visita') ganadorNombre = partido.visita;
+
+                                      setResultadoEdicion({
+                                        ...resultadoEdicion,
+                                        [partido.id]: { ...rEdit, ganador_nombre: ganadorNombre }
+                                      });
+                                    }}
+                                    className="w-full h-8 px-2 border border-gh-border rounded bg-gh-bg-light text-[10px] text-gh-text focus:outline-none focus:border-wc-purple transition-all font-semibold cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                                   >
-                                    {partido.local.split(' ')[0]}
-                                  </ListBox.Item>
-                                  <ListBox.Item 
-                                    key={partido.visita} 
-                                    id={partido.visita} 
-                                    textValue={partido.visita}
-                                    className="px-2 py-1 rounded text-[10px] font-semibold text-gh-text hover:bg-wc-purple hover:text-white cursor-pointer transition-all"
-                                  >
-                                    {partido.visita.split(' ')[0]}
-                                  </ListBox.Item>
-                                </ListBox>
-                              </Select.Popover>
-                            </Select>
-                          </div>
+                                    <option value="" disabled>Avanza</option>
+                                    <option value="local">{partido.local.split(' ')[0]}</option>
+                                    <option value="visita">{partido.visita.split(' ')[0]}</option>
+                                  </select>
+                                </div>
+                              );
+                           })()}
 
                           <div className="flex items-center gap-2">
                             <Button 
@@ -563,94 +617,56 @@ export default function MasterDashboard({
                           <div className="flex flex-col sm:flex-row gap-2 items-center">
                             {/* Local Select */}
                             <div className="w-36">
-                              <Select
-                                selectedKeys={uEdit.local ? new Set([uEdit.local]) : new Set()}
-                                onSelectionChange={(keys) => {
-                                  let val = '';
-                                  if (keys instanceof Set) val = [...keys][0];
-                                  else if (typeof keys === 'string' || typeof keys === 'number') val = keys;
+                              <select
+                                value={getCleanSelectKey(uEdit.local)}
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  const matchedTeam = candidatos.locales.find(t => getCleanSelectKey(t) === val);
                                   setUnconfirmedEquipos({
                                     ...unconfirmedEquipos,
-                                    [partido.id]: { ...uEdit, local: val }
+                                    [partido.id]: { ...uEdit, local: matchedTeam || '' }
                                   });
                                 }}
-                                placeholder="Selecciona Local"
-                                aria-label="Local"
-                                size="sm"
+                                className="w-full h-8 px-2 border border-gh-border rounded bg-gh-bg-light text-[10px] text-gh-text focus:outline-none focus:border-wc-purple transition-all font-semibold cursor-pointer"
                               >
-                                <Select.Trigger className="w-full h-8 px-2 border border-gh-border rounded bg-gh-bg-light text-[10px] text-gh-text transition-all">
-                                  <Select.Value />
-                                  <Select.Indicator className="text-gh-text-muted">
-                                    <ChevronDown size={12} className="transition-transform duration-200" />
-                                  </Select.Indicator>
-                                </Select.Trigger>
-                                <Select.Popover className="border border-gh-border bg-gh-bg-light rounded-lg shadow-xl overflow-hidden min-w-[120px] z-50">
-                                  <ListBox className="p-1 max-h-40 overflow-y-auto">
-                                    {candidatos.locales.map((team) => (
-                                      <ListBox.Item 
-                                        key={team} 
-                                        id={team} 
-                                        textValue={team}
-                                        className="px-2 py-1 rounded text-[10px] font-semibold text-gh-text hover:bg-wc-purple hover:text-white cursor-pointer transition-all"
-                                      >
-                                        {team}
-                                      </ListBox.Item>
-                                    ))}
-                                  </ListBox>
-                                </Select.Popover>
-                              </Select>
+                                <option value="" disabled>Selecciona Local</option>
+                                {candidatos.locales.map((team) => (
+                                  <option key={getCleanSelectKey(team)} value={getCleanSelectKey(team)}>
+                                    {team}
+                                  </option>
+                                ))}
+                              </select>
                             </div>
 
                             {/* Visita Select */}
                             <div className="w-36">
-                              <Select
-                                selectedKeys={uEdit.visita ? new Set([uEdit.visita]) : new Set()}
-                                onSelectionChange={(keys) => {
-                                  let val = '';
-                                  if (keys instanceof Set) val = [...keys][0];
-                                  else if (typeof keys === 'string' || typeof keys === 'number') val = keys;
+                              <select
+                                value={getCleanSelectKey(uEdit.visita)}
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  const matchedTeam = candidatos.visitas.find(t => getCleanSelectKey(t) === val);
                                   setUnconfirmedEquipos({
                                     ...unconfirmedEquipos,
-                                    [partido.id]: { ...uEdit, visita: val }
+                                    [partido.id]: { ...uEdit, visita: matchedTeam || '' }
                                   });
                                 }}
-                                placeholder="Selecciona Visita"
-                                aria-label="Visita"
-                                size="sm"
+                                className="w-full h-8 px-2 border border-gh-border rounded bg-gh-bg-light text-[10px] text-gh-text focus:outline-none focus:border-wc-purple transition-all font-semibold cursor-pointer"
                               >
-                                <Select.Trigger className="w-full h-8 px-2 border border-gh-border rounded bg-gh-bg-light text-[10px] text-gh-text transition-all">
-                                  <Select.Value />
-                                  <Select.Indicator className="text-gh-text-muted">
-                                    <ChevronDown size={12} className="transition-transform duration-200" />
-                                  </Select.Indicator>
-                                </Select.Trigger>
-                                <Select.Popover className="border border-gh-border bg-gh-bg-light rounded-lg shadow-xl overflow-hidden min-w-[120px] z-50">
-                                  <ListBox className="p-1 max-h-40 overflow-y-auto">
-                                    {candidatos.visitas.map((team) => (
-                                      <ListBox.Item 
-                                        key={team} 
-                                        id={team} 
-                                        textValue={team}
-                                        className="px-2 py-1 rounded text-[10px] font-semibold text-gh-text hover:bg-wc-purple hover:text-white cursor-pointer transition-all"
-                                      >
-                                        {team}
-                                      </ListBox.Item>
-                                    ))}
-                                  </ListBox>
-                                </Select.Popover>
-                              </Select>
+                                <option value="" disabled>Selecciona Visita</option>
+                                {candidatos.visitas.map((team) => (
+                                  <option key={getCleanSelectKey(team)} value={getCleanSelectKey(team)}>
+                                    {team}
+                                  </option>
+                                ))}
+                              </select>
                             </div>
 
                             <Button 
-                              variant="secondary" 
-                              size="sm" 
+                              variant="neon-blue"
+                              size="sm"
                               onClick={() => {
                                 if (!uEdit.local || !uEdit.visita) {
-                                  sileo.error({ title: "Faltan equipos", description: "Debes seleccionar ambos equipos." });
-                                  return;
-                                }
-                                if (uEdit.local === uEdit.visita) {
-                                  sileo.error({ title: "Equipos duplicados", description: "El equipo local y visita no pueden ser el mismo." });
+                                  sileo.error({ title: "Completa ambos equipos" });
                                   return;
                                 }
                                 onConfirmarPartidoPendiente(partido.id, uEdit.local, uEdit.visita);
@@ -673,116 +689,188 @@ export default function MasterDashboard({
           {/* TAB D: PUNTUACIONES */}
         {activeAdminTab === 'puntuaciones' && (
             <div className="space-y-4 mt-4">
-              <Select
-                selectedKeys={selectedGroupId ? new Set([selectedGroupId.toString()]) : new Set()}
-                onSelectionChange={(keys) => {
-                  let val = '';
-                  if (keys instanceof Set) {
-                    val = [...keys][0];
-                  } else if (typeof keys === 'string' || typeof keys === 'number') {
-                    val = keys;
-                  } else if (keys && typeof keys === 'object' && 'anchorKey' in keys) {
-                    val = keys.anchorKey;
-                  } else if (keys) {
-                    val = [...keys][0];
-                  }
-                  setSelectedGroupId(val || '');
-                }}
-                placeholder="Selecciona familia"
-                className="w-full max-w-sm"
-                aria-label="Seleccionar familia"
-              >
-                <Select.Trigger className="w-full h-10 px-3 border border-gh-border rounded-lg flex items-center justify-between bg-gh-bg-light hover:bg-gh-bg-active font-sans text-sm text-gh-text transition-all">
-                  <Select.Value />
-                 <Select.Indicator className="text-gh-text-muted">
-                   <ChevronDown size={12} className="transition-transform duration-200" />
-                 </Select.Indicator>
-                </Select.Trigger>
-                <Select.Popover className="border border-gh-border bg-gh-bg-light rounded-lg shadow-xl overflow-hidden min-w-[200px] z-50">
-                  <ListBox className="p-1 max-h-60 overflow-y-auto">
+              {selectedUserForPreds ? (
+                <Card className="border-gh-border overflow-hidden bg-gh-bg-light shadow-xl">
+                  <CardHeader className="border-b border-gh-border/50 py-3 px-4 flex flex-row items-center justify-between">
+                    <div>
+                      <CardTitle className="text-sm font-bold text-gh-text uppercase tracking-wider font-barlow">
+                        Editar Pronósticos de {selectedUserForPreds.nombre}
+                      </CardTitle>
+                      <p className="text-[10px] text-gh-text-muted mt-0.5">
+                        Usuario: @{selectedUserForPreds.username} | Grupo: {gruposList.find(g => g.id === selectedUserForPreds.grupo_id)?.nombre}
+                      </p>
+                    </div>
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      onClick={() => setSelectedUserForPreds(null)}
+                      className="h-8 text-xs font-bold border-gh-border bg-gh-bg-light hover:bg-gh-bg-active text-gh-text cursor-pointer"
+                    >
+                      Volver
+                    </Button>
+                  </CardHeader>
+                  <CardContent className="p-4 space-y-4">
+                    <div className="text-xs text-gh-text-muted italic">
+                      Como Master puedes modificar o ingresar pronósticos de cualquier partido (abierto o cerrado de días anteriores).
+                    </div>
+                    
+                    <div className="divide-y divide-gh-border/50 max-h-[500px] overflow-y-auto pr-1">
+                      {partidos.map((partido) => {
+                        const pred = editingPreds[partido.id] || { goles_local: '', goles_visita: '' };
+                        const resOficial = resultados[partido.id];
+                        const isClosed = resOficial?.cerrado;
+
+                        return (
+                          <div key={partido.id} className="py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                            <div className="flex flex-col">
+                              <span className="font-semibold text-gh-text">
+                                {partido.local} vs {partido.visita}
+                              </span>
+                              <span className="text-[10px] text-gh-text-muted mt-0.5">
+                                {partido.fecha} · {partido.hora} {isClosed && <span className="text-wc-red font-bold">(Cerrado)</span>}
+                              </span>
+                              {resOficial && resOficial.goles_local !== null && (
+                                <span className="text-[9px] text-wc-yellow font-bold mt-0.5">
+                                  Resultado Oficial: {resOficial.goles_local} - {resOficial.goles_visita}
+                                </span>
+                              )}
+                            </div>
+
+                            <div className="flex items-center gap-3">
+                              <div className="flex items-center gap-1.5">
+                                <input 
+                                  type="number" 
+                                  min="0"
+                                  value={pred.goles_local}
+                                  onChange={(e) => handleEditChange(partido.id, 'goles_local', e.target.value)}
+                                  className="w-12 h-8 text-center font-mono font-bold bg-black/10 dark:bg-black/25 border border-gh-border/50 rounded-lg text-gh-text text-sm focus:outline-hidden"
+                                  aria-label="Goles local"
+                                />
+                                <span className="font-bold text-gh-text-muted">:</span>
+                                <input 
+                                  type="number" 
+                                  min="0"
+                                  value={pred.goles_visita}
+                                  onChange={(e) => handleEditChange(partido.id, 'goles_visita', e.target.value)}
+                                  className="w-12 h-8 text-center font-mono font-bold bg-black/10 dark:bg-black/25 border border-gh-border/50 rounded-lg text-gh-text text-sm focus:outline-hidden"
+                                  aria-label="Goles visita"
+                                />
+                              </div>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleSavePredictionClick(partido.id)}
+                                className="h-8 px-3 text-xs font-bold border-gh-border bg-gh-bg-light hover:bg-gh-bg-active text-gh-text hover:text-wc-green cursor-pointer"
+                              >
+                                Guardar
+                              </Button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </CardContent>
+                </Card>
+              ) : (
+                <>
+                  <select
+                    value={selectedGroupId ? selectedGroupId.toString() : ''}
+                    onChange={(e) => setSelectedGroupId(e.target.value)}
+                    aria-label="Seleccionar familia"
+                    className="w-full max-w-sm h-10 px-3 border border-gh-border rounded-lg bg-gh-bg-light font-sans text-sm text-gh-text focus:outline-none focus:border-wc-purple transition-all font-semibold cursor-pointer"
+                  >
+                    <option value="" disabled>Selecciona familia</option>
                     {gruposList.map((g) => (
-                      <ListBox.Item 
-                        key={g.id.toString()} 
-                        id={g.id.toString()} 
-                        textValue={g.nombre}
-                        className="px-3 py-1.5 rounded-md text-xs font-semibold text-gh-text hover:bg-wc-purple hover:text-white cursor-pointer transition-all flex items-center"
-                      >
+                      <option key={g.id.toString()} value={g.id.toString()}>
                         {g.nombre}
-                      </ListBox.Item>
+                      </option>
                     ))}
-                  </ListBox>
-                </Select.Popover>
-              </Select>
-              {selectedGroupId && (
-                <Table className="overflow-hidden">
-                  <Table.ScrollContainer>
-                    <Table.Content aria-label="Puntuaciones">
-                      <Table.Header>
-                        <Table.Column>Nombre</Table.Column>
-                        <Table.Column>Usuario</Table.Column>
-                        <Table.Column>Rol</Table.Column>
-                        <Table.Column>Puntuación</Table.Column>
-                      </Table.Header>
-                      <Table.Body>
-                        {usuariosList
-                          .filter(u => selectedGroupId && u.grupo_id === selectedGroupId)
-                          .map(user => (
-                            <Table.Row key={user.id} className="hover:bg-gray-100 dark:hover:bg-[#21262d]/5">
-                              <Table.Cell className="font-semibold text-gh-text">{user.nombre}</Table.Cell>
-                              <Table.Cell className="text-sm text-gray-600 dark:text-gray-400">@{user.username}</Table.Cell>
-                              <Table.Cell className="text-sm text-gray-600 dark:text-gray-400">{user.es_admin ? 'GESTOR' : 'MIEMBRO'}</Table.Cell>
-                              <Table.Cell className="text-sm text-gray-600 dark:text-gray-400">0</Table.Cell>
-                            </Table.Row>
-                          ))}
-                      </Table.Body>
-                    </Table.Content>
-                  </Table.ScrollContainer>
-                </Table>
+                  </select>
+                  {selectedGroupId && (
+                    <Table className="overflow-hidden">
+                      <Table.ScrollContainer>
+                        <Table.Content aria-label="Puntuaciones">
+                          <Table.Header>
+                            <Table.Column isRowHeader>Nombre</Table.Column>
+                            <Table.Column>Usuario</Table.Column>
+                            <Table.Column>Rol</Table.Column>
+                            <Table.Column>Puntuación</Table.Column>
+                            <Table.Column>Acciones</Table.Column>
+                          </Table.Header>
+                          <Table.Body>
+                              {usuariosList
+                                .filter(u => selectedGroupId && u.grupo_id === selectedGroupId)
+                                .map(user => {
+                                  // Calcular puntos reales del usuario
+                                  let score = 0;
+                                  const predsUsr = allPredicciones?.filter(p => p.usuario_id === user.id) || [];
+                                  predsUsr.forEach(p => {
+                                    const res = resultados[p.partido_id];
+                                    if (res && res.cerrado) {
+                                      const pL = p.goles_local;
+                                      const pV = p.goles_visita;
+                                      const rL = res.goles_local;
+                                      const rV = res.goles_visita;
+                                      if (pL === rL && pV === rV) {
+                                        score += 3;
+                                      } else {
+                                        const pDiff = pL - pV;
+                                        const rDiff = rL - rV;
+                                        if ((pDiff > 0 && rDiff > 0) || (pDiff < 0 && rDiff < 0) || (pDiff === 0 && rDiff === 0)) {
+                                          score += 1;
+                                        }
+                                      }
+                                    }
+                                  });
+
+                                  return (
+                                    <Table.Row key={user.id} className="hover:bg-gray-100 dark:hover:bg-[#21262d]/5">
+                                      <Table.Cell className="font-semibold text-gh-text">{user.nombre}</Table.Cell>
+                                      <Table.Cell className="text-sm text-gray-600 dark:text-gray-400">@{user.username}</Table.Cell>
+                                      <Table.Cell className="text-sm text-gray-600 dark:text-gray-400">
+                                        {user.es_admin ? (
+                                          <span className="text-[10px] bg-wc-purple/10 border border-wc-purple/20 text-wc-purple font-bold px-1.5 py-0.5 rounded-md">GESTOR</span>
+                                        ) : (
+                                          <span className="text-[10px] bg-gh-border text-gh-text-muted font-bold px-1.5 py-0.5 rounded-md">MIEMBRO</span>
+                                        )}
+                                      </Table.Cell>
+                                      <Table.Cell className="text-sm font-bold text-wc-yellow">{score} PTS</Table.Cell>
+                                      <Table.Cell>
+                                        <Button
+                                          size="sm"
+                                          onClick={() => handleStartEditPredicciones(user)}
+                                          className="h-8 px-3 text-xs font-bold border border-gh-border bg-gh-bg-light hover:bg-gh-bg-active text-gh-text hover:text-wc-purple transition-all rounded-md cursor-pointer"
+                                        >
+                                          Editar Pronósticos
+                                        </Button>
+                                      </Table.Cell>
+                                    </Table.Row>
+                                  );
+                                })}
+                            </Table.Body>
+                          </Table.Content>
+                        </Table.ScrollContainer>
+                    </Table>
+                  )}
+                </>
               )}
             </div>
         )}
         {activeAdminTab === 'logs' && (
             <div className="space-y-4 mt-4">
-              <Select
-                selectedKeys={selectedGroupId ? new Set([selectedGroupId.toString()]) : new Set()}
-                onSelectionChange={(keys) => {
-                  let val = '';
-                  if (keys instanceof Set) {
-                    val = [...keys][0];
-                  } else if (typeof keys === 'string' || typeof keys === 'number') {
-                    val = keys;
-                  } else if (keys && typeof keys === 'object' && 'anchorKey' in keys) {
-                    val = keys.anchorKey;
-                  } else if (keys) {
-                    val = [...keys][0];
-                  }
-                  setSelectedGroupId(val || '');
-                }}
-                placeholder="Selecciona familia para ver logs"
-                className="w-full max-w-sm"
+              <select
+                value={selectedGroupId ? selectedGroupId.toString() : ''}
+                onChange={(e) => setSelectedGroupId(e.target.value)}
                 aria-label="Seleccionar familia para logs"
+                className="w-full max-w-sm h-10 px-3 border border-gh-border rounded-lg bg-gh-bg-light font-sans text-sm text-gh-text focus:outline-none focus:border-wc-purple transition-all font-semibold cursor-pointer"
               >
-                <Select.Trigger className="w-full h-10 px-3 border border-gh-border rounded-lg flex items-center justify-between bg-gh-bg-light hover:bg-gh-bg-active font-sans text-sm text-gh-text transition-all">
-                  <Select.Value />
-                 <Select.Indicator className="text-gh-text-muted">
-                   <ChevronDown size={12} className="transition-transform duration-200" />
-                 </Select.Indicator>
-                </Select.Trigger>
-                <Select.Popover className="border border-gh-border bg-gh-bg-light rounded-lg shadow-xl overflow-hidden min-w-[200px] z-50">
-                  <ListBox className="p-1 max-h-60 overflow-y-auto">
-                    {gruposList.map((g) => (
-                      <ListBox.Item 
-                        key={g.id} 
-                        id={g.id} 
-                        textValue={g.nombre}
-                        className="px-3 py-1.5 rounded-md text-xs font-semibold text-gh-text hover:bg-wc-purple hover:text-white cursor-pointer transition-all"
-                      >
-                        {g.nombre} ({g.codigo})
-                      </ListBox.Item>
-                    ))}
-                  </ListBox>
-                </Select.Popover>
-              </Select>
+                <option value="" disabled>Selecciona familia para ver logs</option>
+                {gruposList.map((g) => (
+                  <option key={g.id.toString()} value={g.id.toString()}>
+                    {g.nombre} ({g.codigo})
+                  </option>
+                ))}
+              </select>
 
               {!selectedGroupId ? (
                 <div className="text-center py-12 text-xs text-gh-text-muted italic bg-gh-bg-light rounded-xl border border-gh-border">
@@ -794,17 +882,17 @@ export default function MasterDashboard({
                 </div>
               ) : (
                 <Table aria-label="Tabla de Logs de Asignación de Puntos">
-                  <Table.Header className="bg-black/5 dark:bg-[#161b22]/50 border-b border-gh-border text-xs font-bold text-gh-text-muted uppercase tracking-wider font-barlow text-left">
-                    <Table.Column>Miembro</Table.Column>
-                    <Table.Column>Partido</Table.Column>
-                    <Table.Column>Pronóstico</Table.Column>
-                    <Table.Column>Resultado</Table.Column>
-                    <Table.Column>Cálculo</Table.Column>
-                    <Table.Column>Puntos</Table.Column>
-                    <Table.Column>Fecha de Cierre</Table.Column>
-                  </Table.Header>
                   <Table.ScrollContainer className="max-h-[400px]">
                     <Table.Content>
+                      <Table.Header className="bg-black/5 dark:bg-[#161b22]/50 border-b border-gh-border text-xs font-bold text-gh-text-muted uppercase tracking-wider font-barlow text-left">
+                        <Table.Column isRowHeader>Miembro</Table.Column>
+                        <Table.Column>Partido</Table.Column>
+                        <Table.Column>Pronóstico</Table.Column>
+                        <Table.Column>Resultado</Table.Column>
+                        <Table.Column>Cálculo</Table.Column>
+                        <Table.Column>Puntos</Table.Column>
+                        <Table.Column>Fecha de Cierre</Table.Column>
+                      </Table.Header>
                       <Table.Body>
                         {auditLogs.map((log) => (
                           <Table.Row key={log.id} className="hover:bg-gray-100 dark:hover:bg-[#21262d]/5">

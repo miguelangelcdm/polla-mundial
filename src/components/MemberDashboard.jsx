@@ -5,6 +5,81 @@ import { Star, Trophy, Calendar, Clock, Plus, Minus, Check, MapPin, ChevronDown 
 import Leaderboard from './Leaderboard';
 import { sileo } from 'sileo';
 
+const getCountryInitials = (teamName) => {
+  if (!teamName) return '';
+  const cleanName = teamName.replace(/[\uD83C-\uDBFF\uDC00-\uDFFF]+/g, '').trim().toUpperCase();
+  
+  const countryMap = {
+    'FRANCIA': 'FRA',
+    'PARAGUAY': 'PAR',
+    'CANADÁ': 'CAN',
+    'CANADA': 'CAN',
+    'MARRUECOS': 'MAR',
+    'BRASIL': 'BRA',
+    'NORUEGA': 'NOR',
+    'MÉXICO': 'MEX',
+    'MEXICO': 'MEX',
+    'INGLATERRA': 'ENG',
+    'ESPAÑA': 'ESP',
+    'ESPANA': 'ESP',
+    'PORTUGAL': 'POR',
+    'BÉLGICA': 'BEL',
+    'BELGICA': 'BEL',
+    'USA': 'USA',
+    'EEUU': 'USA',
+    'EE.UU.': 'USA',
+    'ARGENTINA': 'ARG',
+    'EGIPTO': 'EGY',
+    'SUIZA': 'SUI',
+    'COLOMBIA': 'COL'
+  };
+
+  if (countryMap[cleanName]) {
+    return countryMap[cleanName];
+  }
+
+  if (cleanName.includes('GANADOR OCTAVOS')) {
+    return `G_OCT_${cleanName.split(' ').pop()}`;
+  }
+  if (cleanName.includes('GANADOR CUARTOS')) {
+    return `G_CUART_${cleanName.split(' ').pop()}`;
+  }
+  if (cleanName.includes('GANADOR SEMIFINAL')) {
+    return `G_SEMI_${cleanName.split(' ').pop()}`;
+  }
+  if (cleanName.includes('PERDEDOR SEMIFINAL')) {
+    return `P_SEMI_${cleanName.split(' ').pop()}`;
+  }
+
+  return cleanName.substring(0, 3);
+};
+
+const parseMatchDateTime = (fechaStr, horaStr) => {
+  if (!fechaStr) return null;
+  const dia = parseInt(fechaStr.split(' ')[0]);
+  const horaClean = (horaStr || '18:00 HS').replace(' HS', '').trim();
+  const [hrs, mins] = horaClean.split(':').map(Number);
+  // Julio 2026 (index del mes es 6)
+  return new Date(2026, 6, dia, hrs, mins, 0);
+};
+
+const getMatchLabel = (p) => {
+  if (p.confirmado) {
+    return `${getCountryInitials(p.local)} - ${getCountryInitials(p.visita)}`;
+  }
+  const phaseLabels = {
+    'cuartos_a': 'Cuartos 1',
+    'cuartos_b': 'Cuartos 2',
+    'cuartos_c': 'Cuartos 3',
+    'cuartos_d': 'Cuartos 4',
+    'semi_a': 'Semifinal 1',
+    'semi_b': 'Semifinal 2',
+    'tercer_puesto': '3er Puesto',
+    'final': 'Final'
+  };
+  return phaseLabels[p.id] || p.id;
+};
+
 export default function MemberDashboard({
   partidos,
   predicciones,
@@ -17,14 +92,6 @@ export default function MemberDashboard({
 }) {
   // 1. Encontrar el próximo partido abierto (que no haya comenzado y no esté cerrado)
   const proximoPartido = useMemo(() => {
-    const parseMatchDateTime = (fechaStr, horaStr) => {
-      if (!fechaStr) return null;
-      const dia = parseInt(fechaStr.split(' ')[0]);
-      const horaClean = (horaStr || '18:00 HS').replace(' HS', '').trim();
-      const [hrs, mins] = horaClean.split(':').map(Number);
-      return new Date(2026, 6, dia, hrs, mins, 0);
-    };
-
     const now = new Date();
     // Encontrar el primer partido en el futuro que no esté cerrado en la base de datos
     const match = partidos.find((p) => {
@@ -64,15 +131,6 @@ export default function MemberDashboard({
   const isCerrado = useMemo(() => {
     if (resOficial?.cerrado) return true;
     if (!selectedMatch) return false;
-    
-    const parseMatchDateTime = (fechaStr, horaStr) => {
-      if (!fechaStr) return null;
-      const dia = parseInt(fechaStr.split(' ')[0]);
-      const horaClean = (horaStr || '18:00 HS').replace(' HS', '').trim();
-      const [hrs, mins] = horaClean.split(':').map(Number);
-      // Julio 2026 (index del mes es 6)
-      return new Date(2026, 6, dia, hrs, mins, 0);
-    };
 
     const kickoffDate = parseMatchDateTime(selectedMatch.fecha, selectedMatch.hora);
     if (!kickoffDate) return false;
@@ -88,15 +146,6 @@ export default function MemberDashboard({
       setTimeLeft('');
       return;
     }
-
-    const parseMatchDateTime = (fechaStr, horaStr) => {
-      if (!fechaStr) return null;
-      const dia = parseInt(fechaStr.split(' ')[0]);
-      const horaClean = (horaStr || '18:00 HS').replace(' HS', '').trim();
-      const [hrs, mins] = horaClean.split(':').map(Number);
-      // Julio 2026 (index del mes es 6)
-      return new Date(2026, 6, dia, hrs, mins, 0);
-    };
 
     const targetDate = parseMatchDateTime(selectedMatch.fecha, selectedMatch.hora);
     if (!targetDate) {
@@ -131,24 +180,50 @@ export default function MemberDashboard({
     return () => clearInterval(interval);
   }, [selectedMatch]);
 
-  // Sincronizar los campos al cambiar de partido
+  const [isDirty, setIsDirty] = useState(false);
+  const prevSelectedPartidoIdRef = React.useRef('');
+
+  // Sincronizar los campos al cambiar de partido o si los datos se cargan inicialmente
+  useEffect(() => {
+    const matchIdChanged = prevSelectedPartidoIdRef.current !== selectedMatch?.id;
+    
+    if (matchIdChanged || !isDirty) {
+      if (savedPred) {
+        setGolesLocal(savedPred.goles_local !== undefined ? String(savedPred.goles_local) : '');
+        setGolesVisita(savedPred.goles_visita !== undefined ? String(savedPred.goles_visita) : '');
+      } else {
+        setGolesLocal('');
+        setGolesVisita('');
+      }
+      if (matchIdChanged && selectedMatch) {
+        setIsDirty(false);
+        prevSelectedPartidoIdRef.current = selectedMatch.id;
+      }
+    }
+  }, [selectedMatch, savedPred, isDirty]);
+
+  // Si el estado guardado coincide con el estado local, ya no estamos sucios (se completó el guardado con éxito o no hay cambios)
   useEffect(() => {
     if (savedPred) {
-      setGolesLocal(savedPred.goles_local !== undefined ? String(savedPred.goles_local) : '');
-      setGolesVisita(savedPred.goles_visita !== undefined ? String(savedPred.goles_visita) : '');
-    } else {
-      setGolesLocal('');
-      setGolesVisita('');
+      const savedL = savedPred.goles_local !== undefined ? String(savedPred.goles_local) : '';
+      const savedV = savedPred.goles_visita !== undefined ? String(savedPred.goles_visita) : '';
+      if (savedL === golesLocal && savedV === golesVisita) {
+        setIsDirty(false);
+      }
+    } else if (golesLocal === '' && golesVisita === '') {
+      setIsDirty(false);
     }
-  }, [selectedMatch, savedPred]);
+  }, [savedPred, golesLocal, golesVisita]);
 
   // Controles de incremento / decremento
   const handleIncrementLocal = () => {
     if (isCerrado) return;
+    setIsDirty(true);
     setGolesLocal(prev => String((parseInt(prev) || 0) + 1));
   };
   const handleDecrementLocal = () => {
     if (isCerrado) return;
+    setIsDirty(true);
     setGolesLocal(prev => {
       const val = parseInt(prev) || 0;
       return val > 0 ? String(val - 1) : '0';
@@ -156,10 +231,12 @@ export default function MemberDashboard({
   };
   const handleIncrementVisita = () => {
     if (isCerrado) return;
+    setIsDirty(true);
     setGolesVisita(prev => String((parseInt(prev) || 0) + 1));
   };
   const handleDecrementVisita = () => {
     if (isCerrado) return;
+    setIsDirty(true);
     setGolesVisita(prev => {
       const val = parseInt(prev) || 0;
       return val > 0 ? String(val - 1) : '0';
@@ -273,13 +350,6 @@ export default function MemberDashboard({
                   </div>
 
                   {(() => {
-                    const parseMatchDateTime = (fechaStr, horaStr) => {
-                      if (!fechaStr) return null;
-                      const dia = parseInt(fechaStr.split(' ')[0]);
-                      const horaClean = (horaStr || '18:00 HS').replace(' HS', '').trim();
-                      const [hrs, mins] = horaClean.split(':').map(Number);
-                      return new Date(2026, 6, dia, hrs, mins, 0);
-                    };
                     const kickoffDate = parseMatchDateTime(proximoPartido.fecha, proximoPartido.hora);
                     const hasStarted = kickoffDate && new Date() >= kickoffDate;
 
@@ -337,16 +407,22 @@ export default function MemberDashboard({
                   </Select.Trigger>
                   <Select.Popover className="border border-gh-border bg-gh-bg-light rounded-lg shadow-xl overflow-hidden min-w-[160px] z-50">
                     <ListBox className="p-1 max-h-48 overflow-y-auto">
-                      {partidos.map((p) => (
-                        <ListBox.Item 
-                          key={p.id} 
-                          id={p.id} 
-                          textValue={`${p.local.split(' ')[0]} vs ${p.visita.split(' ')[0]}`}
-                          className="px-2 py-1 rounded text-[10px] font-semibold text-gh-text hover:bg-wc-purple hover:text-white cursor-pointer transition-all"
-                        >
-                          {p.local.split(' ')[0]} vs {p.visita.split(' ')[0]}
-                        </ListBox.Item>
-                      ))}
+                      {partidos
+                        .filter((p) => {
+                          const kickoffDate = parseMatchDateTime(p.fecha, p.hora);
+                          const hasPassed = kickoffDate && new Date() >= kickoffDate;
+                          return !resultados[p.id]?.cerrado && !hasPassed;
+                        })
+                        .map((p) => (
+                          <ListBox.Item 
+                            key={p.id} 
+                            id={p.id} 
+                            textValue={`${p.local.split(' ')[0]} vs ${p.visita.split(' ')[0]}`}
+                            className="px-2 py-1 rounded text-[10px] font-semibold text-gh-text hover:bg-wc-purple hover:text-white cursor-pointer transition-all"
+                          >
+                            {p.local.split(' ')[0]} vs {p.visita.split(' ')[0]}
+                          </ListBox.Item>
+                        ))}
                     </ListBox>
                   </Select.Popover>
                 </Select>
@@ -500,7 +576,7 @@ export default function MemberDashboard({
               <div className="grid grid-cols-7 gap-1.5">
                 {diasMes.map((diaObj, idx) => {
                   const hasMatch = diaObj.matches.length > 0;
-                  const isToday = diaObj.dia === 4; // Mock de día actual (Comienzo mundial)
+                  const isToday = diaObj.dia === new Date().getDate();
                   return (
                     <div 
                       key={idx} 
@@ -553,7 +629,7 @@ export default function MemberDashboard({
                                     : 'bg-gh-bg-light border-gh-border/50 text-gh-text hover:bg-gh-bg-active'
                               }`}
                             >
-                              <span>{p.local.split(' ')[0]} - {p.visita.split(' ')[0]}</span>
+                              <span>{getMatchLabel(p)}</span>
                               {isClosed && <span className="text-[8px]">🔒</span>}
                             </button>
                           );
@@ -590,13 +666,13 @@ export default function MemberDashboard({
             </div>
             
             <div className="divide-y divide-gh-border/50 max-h-[300px] overflow-y-auto">
-              {usuariosList && usuariosList.filter(u => u.grupo_id === currentUser.grupo_id && u.id !== currentUser.id).length === 0 ? (
+              {usuariosList && usuariosList.filter(u => u.grupo_id === currentUser.grupo_id).length === 0 ? (
                 <div className="p-6 text-center text-xs text-gh-text-muted italic">
-                  No hay otros miembros en tu grupo familiar.
+                  No hay miembros en tu grupo familiar.
                 </div>
               ) : (
                 usuariosList && usuariosList
-                  .filter(u => u.grupo_id === currentUser.grupo_id && u.id !== currentUser.id)
+                  .filter(u => u.grupo_id === currentUser.grupo_id)
                   .map((usr) => {
                     const nextPred = allPredicciones && allPredicciones.find(
                       p => p.usuario_id === usr.id && p.partido_id === proximoPartido.id
@@ -605,7 +681,12 @@ export default function MemberDashboard({
                     return (
                       <div key={usr.id} className="p-3 flex items-center justify-between text-xs hover:bg-[#21262d]/5 transition-theme">
                         <div className="flex flex-col">
-                          <span className="font-semibold text-gh-text">{usr.nombre}</span>
+                          <span className="font-semibold text-gh-text">
+                            {usr.nombre}
+                            {usr.id === currentUser.id && (
+                              <span className="text-[9px] bg-wc-green/10 border border-wc-green/20 text-wc-green font-bold px-1.5 py-0.5 rounded-md ml-1.5 uppercase font-barlow tracking-wider">Tú</span>
+                            )}
+                          </span>
                           <span className="text-[9px] text-gh-text-muted">@{usr.username}</span>
                         </div>
                         
