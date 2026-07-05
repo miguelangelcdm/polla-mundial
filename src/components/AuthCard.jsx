@@ -18,7 +18,7 @@ export default function AuthCard({
   toggleTheme
 }) {
   return (
-    <div className="min-h-screen lg:h-screen w-full flex flex-col lg:flex-row bg-gh-bg transition-all duration-300 relative lg:overflow-hidden lg:p-5 gap-6">
+    <div className="min-h-[100dvh] lg:h-screen w-full flex flex-col lg:flex-row bg-gh-bg transition-all duration-300 relative lg:overflow-hidden lg:p-5 gap-6">
       
       {/* Imagen de fondo difuminada en móviles como textura de agua (marca de agua limpia) */}
       <img 

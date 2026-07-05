@@ -600,14 +600,14 @@ export default function App() {
   }
 
   return (
-    <div className={`min-h-screen flex-1 flex flex-col relative overflow-x-clip bg-gh-bg-dark text-gh-text transition-colors duration-250 ${!currentUser ? 'lg:h-screen lg:overflow-hidden' : ''}`}>
-      {/* Background Aura Spots (Solo visibles en Dark Mode) */}
+    <div className={`min-h-[100dvh] flex-grow flex flex-col relative overflow-x-clip bg-gh-bg-dark text-gh-text transition-colors duration-250 ${!currentUser ? 'lg:h-screen lg:overflow-hidden' : ''}`}>
+      {/* Background Aura Spots (Solo visibles en Dark Mode, encapsuladas para no causar scroll) */}
       {theme === 'dark' && (
-        <>
-          <div className="absolute top-[-10%] left-[-10%] w-[600px] h-[600px] rounded-full bg-wc-purple/5 blur-[150px] pointer-events-none z-0"></div>
-          <div className="absolute bottom-[-10%] right-[-10%] w-[600px] h-[600px] rounded-full bg-wc-green/4 blur-[150px] pointer-events-none z-0"></div>
-          <div className="absolute top-[40%] right-[10%] w-[400px] h-[400px] rounded-full bg-wc-yellow/3 blur-[120px] pointer-events-none z-0"></div>
-        </>
+        <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
+          <div className="absolute top-[-10%] left-[-10%] w-[600px] h-[600px] rounded-full bg-wc-purple/5 blur-[150px]"></div>
+          <div className="absolute bottom-[-10%] right-[-10%] w-[600px] h-[600px] rounded-full bg-wc-green/4 blur-[150px]"></div>
+          <div className="absolute top-[40%] right-[10%] w-[400px] h-[400px] rounded-full bg-wc-yellow/3 blur-[120px]"></div>
+        </div>
       )}
 
       {/* Physics-based Sileo Toast Container */}
@@ -643,7 +643,7 @@ export default function App() {
           />
 
           {/* CUERPO PRINCIPAL */}
-          <main className="max-w-7xl w-full mx-auto px-4 pt-6 z-10 relative">
+          <main className="max-w-7xl w-full mx-auto px-4 pt-6 pb-20 md:pb-16 z-10 relative">
             
             {/* BANNER MODO LOCAL (DEMO) */}
             {isDemoMode && (
@@ -805,6 +805,12 @@ export default function App() {
               </>
             )}
 
+            {/* Mobile Static Footer (Dentro de main para fluir con el contenido y usar el pb del main para limpieza) */}
+            {currentUser && (
+              <footer className="py-2 text-center text-[10px] text-gh-text-muted md:hidden z-10 mt-6">
+                <p>© Polla 2026 Copa Mundial de la FIFA  · Creado por <a className="hover:text-wc-blue" href="https://www.linkedin.com/in/miguelangel-garay-b15178195/" target="_blank" rel="noopener noreferrer">Miguel Garay</a></p>
+              </footer>
+            )}
           </main>
 
           {/* BARRA DE NAVEGACIÓN INFERIOR (Mobile) */}
@@ -822,17 +828,9 @@ export default function App() {
 
       {/* FOOTER GENERAL (Solo se muestra si el usuario está logueado para no empujar la pantalla del login) */}
       {currentUser && (
-        <>
-          {/* Desktop Fixed Footer */}
-          <footer className="fixed bottom-0 left-0 right-0 py-4 border-t border-gh-border text-center text-[10px] text-gh-text-muted bg-gh-bg-dark/80 backdrop-blur-md hidden md:block z-30">
-            <p>© Polla 2026 Copa Mundial de la FIFA  · Creado por <a className="hover:text-wc-blue" href="https://www.linkedin.com/in/miguelangel-garay-b15178195/" target="_blank" rel="noopener noreferrer">Miguel Garay</a></p>
-          </footer>
-
-          {/* Mobile Static Footer (con padding-bottom para quedar sobre el MobileNav al hacer scroll) */}
-          <footer className="py-2 text-center text-[10px] text-gh-text-muted md:hidden z-10 mt-2">
-            <p>© Polla 2026 Copa Mundial de la FIFA  · Creado por <a className="hover:text-wc-blue" href="https://www.linkedin.com/in/miguelangel-garay-b15178195/" target="_blank" rel="noopener noreferrer">Miguel Garay</a></p>
-          </footer>
-        </>
+        <footer className="fixed bottom-0 left-0 right-0 py-4 border-t border-gh-border text-center text-[10px] text-gh-text-muted bg-gh-bg-dark/80 backdrop-blur-md hidden md:block z-30">
+          <p>© Polla 2026 Copa Mundial de la FIFA  · Creado por <a className="hover:text-wc-blue" href="https://www.linkedin.com/in/miguelangel-garay-b15178195/" target="_blank" rel="noopener noreferrer">Miguel Garay</a></p>
+        </footer>
       )}
     </div>
   );
