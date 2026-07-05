@@ -600,7 +600,7 @@ export default function App() {
   }
 
   return (
-    <div className={`pb-18 min-h-screen min-w-screen flex-1 flex flex-col overflow-x-clip bg-gh-bg-dark text-gh-text transition-colors duration-250 ${!currentUser ? 'lg:h-screen lg:overflow-hidden' : ''}`}>
+    <div className={`min-h-screen flex-1 flex flex-col relative overflow-x-clip bg-gh-bg-dark text-gh-text transition-colors duration-250 ${!currentUser ? 'lg:h-screen lg:overflow-hidden' : ''}`}>
       {/* Background Aura Spots (Solo visibles en Dark Mode) */}
       {theme === 'dark' && (
         <>
