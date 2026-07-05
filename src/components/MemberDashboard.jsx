@@ -11,11 +11,28 @@ export default function MemberDashboard({
   resultados,
   tablaPosiciones,
   currentUser,
-  onSavePrediction
+  onSavePrediction,
+  usuariosList,
+  allPredicciones
 }) {
-  // 1. Encontrar el próximo partido abierto
+  // 1. Encontrar el próximo partido abierto (que no haya comenzado y no esté cerrado)
   const proximoPartido = useMemo(() => {
-    return partidos.find(p => !resultados[p.id]?.cerrado) || partidos[partidos.length - 1];
+    const parseMatchDateTime = (fechaStr, horaStr) => {
+      if (!fechaStr) return null;
+      const dia = parseInt(fechaStr.split(' ')[0]);
+      const horaClean = (horaStr || '18:00 HS').replace(' HS', '').trim();
+      const [hrs, mins] = horaClean.split(':').map(Number);
+      return new Date(2026, 6, dia, hrs, mins, 0);
+    };
+
+    const now = new Date();
+    // Encontrar el primer partido en el futuro que no esté cerrado en la base de datos
+    const match = partidos.find((p) => {
+      const kickoff = parseMatchDateTime(p.fecha, p.hora);
+      return kickoff && now < kickoff && !resultados[p.id]?.cerrado;
+    });
+
+    return match || partidos.find(p => !resultados[p.id]?.cerrado) || partidos[partidos.length - 1];
   }, [partidos, resultados]);
 
   // 2. Estado para el partido seleccionado en Tile 2
@@ -23,10 +40,10 @@ export default function MemberDashboard({
 
   // Sincronizar el partido seleccionado por defecto con el próximo partido
   useEffect(() => {
-    if (proximoPartido && !selectedPartidoId) {
+    if (proximoPartido) {
       setSelectedPartidoId(proximoPartido.id);
     }
-  }, [proximoPartido, selectedPartidoId]);
+  }, [proximoPartido]);
 
   const selectedMatch = useMemo(() => {
     return partidos.find(p => p.id === selectedPartidoId) || proximoPartido;
@@ -44,7 +61,75 @@ export default function MemberDashboard({
     return selectedMatch ? resultados[selectedMatch.id] : null;
   }, [selectedMatch, resultados]);
 
-  const isCerrado = resOficial?.cerrado || false;
+  const isCerrado = useMemo(() => {
+    if (resOficial?.cerrado) return true;
+    if (!selectedMatch) return false;
+    
+    const parseMatchDateTime = (fechaStr, horaStr) => {
+      if (!fechaStr) return null;
+      const dia = parseInt(fechaStr.split(' ')[0]);
+      const horaClean = (horaStr || '18:00 HS').replace(' HS', '').trim();
+      const [hrs, mins] = horaClean.split(':').map(Number);
+      // Julio 2026 (index del mes es 6)
+      return new Date(2026, 6, dia, hrs, mins, 0);
+    };
+
+    const kickoffDate = parseMatchDateTime(selectedMatch.fecha, selectedMatch.hora);
+    if (!kickoffDate) return false;
+
+    return new Date() >= kickoffDate;
+  }, [selectedMatch, resOficial]);
+
+  // --- COUNTDOWN TIMER PARA CERRAR PRONÓSTICOS ---
+  const [timeLeft, setTimeLeft] = useState('');
+
+  useEffect(() => {
+    if (!selectedMatch) {
+      setTimeLeft('');
+      return;
+    }
+
+    const parseMatchDateTime = (fechaStr, horaStr) => {
+      if (!fechaStr) return null;
+      const dia = parseInt(fechaStr.split(' ')[0]);
+      const horaClean = (horaStr || '18:00 HS').replace(' HS', '').trim();
+      const [hrs, mins] = horaClean.split(':').map(Number);
+      // Julio 2026 (index del mes es 6)
+      return new Date(2026, 6, dia, hrs, mins, 0);
+    };
+
+    const targetDate = parseMatchDateTime(selectedMatch.fecha, selectedMatch.hora);
+    if (!targetDate) {
+      setTimeLeft('');
+      return;
+    }
+
+    const updateCountdown = () => {
+      const now = new Date();
+      const diff = targetDate.getTime() - now.getTime();
+
+      if (diff <= 0) {
+        setTimeLeft('00:00:00');
+      } else {
+        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+        if (days > 0) {
+          setTimeLeft(`${days}d ${hours}h ${minutes}m`);
+        } else if (hours > 0) {
+          setTimeLeft(`${hours}h ${minutes}m ${seconds}s`);
+        } else {
+          setTimeLeft(`${minutes}m ${seconds}s`);
+        }
+      }
+    };
+
+    updateCountdown();
+    const interval = setInterval(updateCountdown, 1000);
+    return () => clearInterval(interval);
+  }, [selectedMatch]);
 
   // Sincronizar los campos al cambiar de partido
   useEffect(() => {
@@ -115,7 +200,7 @@ export default function MemberDashboard({
 
   // Calcular puntos ganados si está cerrado
   const puntosGanados = useMemo(() => {
-    if (!selectedMatch || !isCerrado || !savedPred) return null;
+    if (!selectedMatch || !isCerrado || !savedPred || !resOficial) return null;
     const predL = savedPred.goles_local;
     const predV = savedPred.goles_visita;
     const resL = resOficial.goles_local;
@@ -141,13 +226,13 @@ export default function MemberDashboard({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           
           {/* TILE 1: PRÓXIMO PARTIDO */}
-          <Card className="shadow-lg border-gh-border overflow-hidden bg-gradient-to-br from-gh-bg-light to-gh-bg-active">
+          <Card className="shadow-lg border-gh-border overflow-hidden bg-gradient-to-br from-gh-bg-light to-gh-bg-active h-full flex flex-col">
             <CardHeader className="border-b border-gh-border/50 py-3 px-4">
               <CardTitle className="text-xs font-bold text-wc-green font-barlow tracking-wider uppercase flex items-center gap-1.5">
                 <Clock size={14} /> PRÓXIMO ENCUENTRO
               </CardTitle>
             </CardHeader>
-            <CardContent className="p-5 flex flex-col justify-between h-[210px]">
+            <CardContent className="p-5 flex flex-col justify-between flex-1 min-h-[210px] h-auto gap-4">
               {proximoPartido ? (
                 <>
                   <div className="space-y-4">
@@ -178,7 +263,7 @@ export default function MemberDashboard({
                     <div className="space-y-1 text-center bg-black/10 dark:bg-black/20 p-2.5 rounded-lg border border-gh-border/30">
                       <div className="flex items-center justify-center gap-1.5 text-xs text-gh-text font-bold">
                         <Calendar size={13} className="text-wc-yellow" />
-                        <span>{proximoPartido.fecha} · 18:00 HS</span>
+                        <span>{proximoPartido.fecha} · {proximoPartido.hora || '18:00 HS'}</span>
                       </div>
                       <div className="flex items-center justify-center gap-1 text-[10px] text-gh-text-muted">
                         <MapPin size={11} />
@@ -187,13 +272,33 @@ export default function MemberDashboard({
                     </div>
                   </div>
 
-                  <button
-                    type="button"
-                    onClick={() => setSelectedPartidoId(proximoPartido.id)}
-                    className="w-full py-1.5 bg-wc-green/10 hover:bg-wc-green/20 border border-wc-green/30 rounded-lg text-[10px] font-black text-wc-green uppercase tracking-wider font-barlow cursor-pointer transition-all"
-                  >
-                    Pronosticar este partido
-                  </button>
+                  {(() => {
+                    const parseMatchDateTime = (fechaStr, horaStr) => {
+                      if (!fechaStr) return null;
+                      const dia = parseInt(fechaStr.split(' ')[0]);
+                      const horaClean = (horaStr || '18:00 HS').replace(' HS', '').trim();
+                      const [hrs, mins] = horaClean.split(':').map(Number);
+                      return new Date(2026, 6, dia, hrs, mins, 0);
+                    };
+                    const kickoffDate = parseMatchDateTime(proximoPartido.fecha, proximoPartido.hora);
+                    const hasStarted = kickoffDate && new Date() >= kickoffDate;
+
+                    if (hasStarted) {
+                      return (
+                        <div className="flex items-center justify-center gap-1.5 py-1.5 bg-wc-red/10 border border-wc-red/20 rounded-lg text-[9px] font-black text-wc-red uppercase tracking-wider font-barlow select-none">
+                          <span className="w-1.5 h-1.5 bg-wc-red rounded-full animate-pulse"></span>
+                          Partido Iniciado / Cerrado
+                        </div>
+                      );
+                    } else {
+                      return (
+                        <div className="flex items-center justify-center gap-1.5 py-1.5 bg-wc-green/10 border border-wc-green/20 rounded-lg text-[9px] font-black text-wc-green uppercase tracking-wider font-barlow select-none">
+                          <span className="w-1.5 h-1.5 bg-wc-green rounded-full animate-ping"></span>
+                          Abierto para pronósticos
+                        </div>
+                      );
+                    }
+                  })()}
                 </>
               ) : (
                 <div className="flex items-center justify-center h-full text-xs text-gh-text-muted italic">
@@ -204,14 +309,14 @@ export default function MemberDashboard({
           </Card>
 
           {/* TILE 2: TU PRONÓSTICO */}
-          <Card className="shadow-lg border-gh-border overflow-hidden bg-gradient-to-br from-gh-bg-light to-gh-bg-active">
+          <Card className="shadow-lg border-gh-border overflow-hidden bg-gradient-to-br from-gh-bg-light to-gh-bg-active h-full flex flex-col">
             <CardHeader className="border-b border-gh-border/50 py-3 px-4 flex flex-row items-center justify-between gap-2">
               <CardTitle className="text-xs font-bold text-wc-purple font-barlow tracking-wider uppercase flex items-center gap-1.5">
                 <Star size={14} className="text-neon-pink" /> TU PRONÓSTICO
               </CardTitle>
               
               {/* Selector de Partido */}
-              <div className="w-[140px]">
+              <div className="w-[150px]">
                 <Select
                   selectedKeys={selectedMatch ? new Set([selectedMatch.id]) : new Set()}
                   onSelectionChange={(keys) => {
@@ -221,10 +326,11 @@ export default function MemberDashboard({
                     if (val) setSelectedPartidoId(val.toString());
                   }}
                   aria-label="Seleccionar partido"
+                  placeholder="Selecciona"
                   size="sm"
                 >
                   <Select.Trigger className="w-full h-7 px-2 border border-gh-border rounded-md flex items-center justify-between bg-gh-bg-light font-sans text-[10px] text-gh-text transition-all">
-                    <Select.Value />
+                    <Select.Value placeholder="Selecciona" />
                     <Select.Indicator className="text-gh-text-muted">
                       <ChevronDown size={12} className="transition-transform duration-200" />
                     </Select.Indicator>
@@ -246,9 +352,21 @@ export default function MemberDashboard({
                 </Select>
               </div>
             </CardHeader>
-            <CardContent className="p-5 flex flex-col justify-between h-[210px]">
+            <CardContent className="p-5 flex flex-col justify-between min-h-[210px] h-auto gap-4 flex-1">
               {selectedMatch ? (
                 <>
+                  {/* Countdown Timer */}
+                  {timeLeft && (
+                    <div className={`flex items-center justify-center gap-1.5 py-1 px-3 border rounded-full text-[10px] font-black uppercase tracking-wider font-barlow max-w-[220px] mx-auto select-none ${
+                      timeLeft === '00:00:00' 
+                        ? 'bg-wc-red/10 border-wc-red/20 text-wc-red' 
+                        : 'bg-wc-yellow/10 border-wc-yellow/20 text-wc-yellow animate-pulse'
+                    }`}>
+                      <Clock size={11} />
+                      <span>{timeLeft === '00:00:00' ? 'Cerrado: 00:00:00' : `Cierre en: ${timeLeft}`}</span>
+                    </div>
+                  )}
+
                   {/* Marcador Táctil */}
                   <div className="flex items-center justify-center gap-4">
                     {/* Local */}
@@ -311,14 +429,23 @@ export default function MemberDashboard({
                   </div>
 
                   {/* Estado / Botón */}
-                  <div className="mt-3">
+                  <div className="mt-1">
                     {isCerrado ? (
-                      <div className="text-center p-2 rounded-lg bg-black/10 border border-gh-border/40">
-                        <span className="block text-[9px] font-black text-gh-text-muted uppercase tracking-wider">Marcador Oficial</span>
-                        <span className="text-xs font-black text-gh-text">
-                          {resOficial.goles_local} - {resOficial.goles_visita}
+                      <div className="text-center p-2.5 rounded-lg bg-black/10 dark:bg-black/25 border border-gh-border/40">
+                        <span className="block text-[9px] font-black text-gh-text-muted uppercase tracking-wider">
+                          {resOficial?.cerrado ? 'Marcador Oficial' : 'Partido Iniciado'}
                         </span>
-                        {puntosGanados !== null && (
+                        {resOficial?.cerrado ? (
+                          <span className="text-xs font-black text-gh-text">
+                            {resOficial.goles_local} - {resOficial.goles_visita}
+                          </span>
+                        ) : (
+                          <span className="text-xs font-bold text-wc-red uppercase tracking-wider font-barlow flex items-center justify-center gap-1.5 mt-0.5 select-none">
+                            <span className="w-1.5 h-1.5 bg-wc-red rounded-full animate-ping"></span>
+                            Predicciones Bloqueadas
+                          </span>
+                        )}
+                        {puntosGanados !== null && resOficial?.cerrado && (
                           <span className={`block text-[10px] font-black mt-1 ${
                             puntosGanados === 3 ? 'text-wc-yellow' : puntosGanados === 1 ? 'text-wc-green' : 'text-wc-red'
                           }`}>
@@ -327,14 +454,15 @@ export default function MemberDashboard({
                         )}
                       </div>
                     ) : (
-                      <Button
-                        variant="neon-blue"
-                        className="w-full h-9 rounded-lg text-xs font-bold shadow-md flex items-center justify-center gap-1.5"
+                      <button
+                        type="button"
                         onClick={handleSave}
                         disabled={golesLocal === '' || golesVisita === ''}
+                        className="w-full h-11 rounded-xl text-xs font-black uppercase tracking-widest text-white bg-gradient-to-r from-[#4f46e5] via-[#7c3aed] to-[#db2777] hover:from-[#4338ca] hover:to-[#be185d] disabled:from-slate-400 disabled:to-slate-500 disabled:opacity-40 disabled:cursor-not-allowed shadow-[0_4px_15px_rgba(124,58,237,0.35)] hover:shadow-[0_6px_20px_rgba(124,58,237,0.5)] transition-all duration-300 transform hover:scale-[1.01] active:scale-[0.99] flex items-center justify-center gap-2 cursor-pointer border-0"
                       >
-                        <Check size={13} /> GUARDAR PRONÓSTICO
-                      </Button>
+                        <Check size={14} />
+                        GUARDAR PRONÓSTICO
+                      </button>
                     )}
                   </div>
                 </>
@@ -448,6 +576,53 @@ export default function MemberDashboard({
           tablaPosiciones={tablaPosiciones} 
           currentUserId={currentUser.id} 
         />
+
+        {/* TILE 4: PRONÓSTICOS EN VIVO (SIGUIENTE PARTIDO) */}
+        {proximoPartido && (
+          <Card className="overflow-hidden shadow-2xl transition-theme">
+            <div className="p-4 bg-gh-bg-active/35 dark:bg-[#0d1627]/60 border-b border-gh-border flex flex-col gap-1">
+              <span className="text-xs font-bold text-gh-text uppercase tracking-wider font-barlow">
+                Pronósticos en Vivo
+              </span>
+              <span className="text-[10px] text-gh-text-muted uppercase">
+                Siguiente Partido: {proximoPartido.local.replace(/[\uD83C-\uDBFF\uDC00-\uDFFF]+/g, '').trim()} vs {proximoPartido.visita.replace(/[\uD83C-\uDBFF\uDC00-\uDFFF]+/g, '').trim()}
+              </span>
+            </div>
+            
+            <div className="divide-y divide-gh-border/50 max-h-[300px] overflow-y-auto">
+              {usuariosList && usuariosList.filter(u => u.grupo_id === currentUser.grupo_id && u.id !== currentUser.id).length === 0 ? (
+                <div className="p-6 text-center text-xs text-gh-text-muted italic">
+                  No hay otros miembros en tu grupo familiar.
+                </div>
+              ) : (
+                usuariosList && usuariosList
+                  .filter(u => u.grupo_id === currentUser.grupo_id && u.id !== currentUser.id)
+                  .map((usr) => {
+                    const nextPred = allPredicciones && allPredicciones.find(
+                      p => p.usuario_id === usr.id && p.partido_id === proximoPartido.id
+                    );
+                    
+                    return (
+                      <div key={usr.id} className="p-3 flex items-center justify-between text-xs hover:bg-[#21262d]/5 transition-theme">
+                        <div className="flex flex-col">
+                          <span className="font-semibold text-gh-text">{usr.nombre}</span>
+                          <span className="text-[9px] text-gh-text-muted">@{usr.username}</span>
+                        </div>
+                        
+                        <div className="px-3 py-1 bg-gh-bg-active/40 border border-gh-border rounded-lg font-mono font-bold text-gh-text text-center min-w-[70px]">
+                          {nextPred && nextPred.goles_local !== '' && nextPred.goles_visita !== '' ? (
+                            <span>{nextPred.goles_local} - {nextPred.goles_visita}</span>
+                          ) : (
+                            <span className="text-[10px] text-gh-text-muted italic font-sans font-normal">Sin pronóstico</span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })
+              )}
+            </div>
+          </Card>
+        )}
       </div>
 
     </div>

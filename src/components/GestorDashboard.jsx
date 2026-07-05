@@ -81,7 +81,8 @@ export default function GestorDashboard({
   predicciones,
   resultados,
   tablaPosiciones,
-  onSavePrediction
+  onSavePrediction,
+  allPredicciones
 }) {
   const [unconfirmedEquipos, setUnconfirmedEquipos] = useState({});
   return (
@@ -94,79 +95,57 @@ export default function GestorDashboard({
         <span className="text-xs text-neon-pink font-semibold">Administración de Familia</span>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 items-start">
-        {/* SIDEBAR TABS (Desktop) & SELECT (Mobile) */}
-        <div className="lg:col-span-1 lg:sticky lg:top-24 z-30">
-          
-          {/* Responsive Select (Mobile only) */}
-          <div className="block md:hidden mb-4">
-            <Select
-              selectedKeys={new Set([activeAdminTab])}
-              onSelectionChange={(keys) => {
-                let val = '';
-                if (keys instanceof Set) val = [...keys][0];
-                else if (typeof keys === 'string' || typeof keys === 'number') val = keys;
-                if (val) setActiveAdminTab(val.toString());
-              }}
-              aria-label="Seleccionar Sección"
-              size="sm"
+      {/* PESTAÑAS HORIZONTALES (TABS) AL TOP */}
+      <div className="hidden md:block w-full mb-6">
+        <Tabs 
+          selectedKey={activeAdminTab} 
+          onSelectionChange={(key) => setActiveAdminTab(key.toString())}
+          variant="solid"
+          color="secondary"
+          fullWidth
+        >
+          <Tabs.ListContainer className="w-full">
+            <Tabs.List 
+              className="w-full rounded-full bg-black/5 dark:bg-[#161b22]/50 p-1 border border-gh-border gap-1 relative"
+              aria-label="Navegación del Gestor"
             >
-              <Select.Trigger className="w-full h-10 px-3 border border-gh-border rounded-lg flex items-center justify-between bg-gh-bg-light font-sans text-xs text-gh-text transition-all">
-                <Select.Value />
-                <Select.Indicator className="text-gh-text-muted">
-                  <ChevronDown size={12} className="transition-transform duration-200" />
-                </Select.Indicator>
-              </Select.Trigger>
-              <Select.Popover className="border border-gh-border bg-gh-bg-light rounded-lg shadow-xl overflow-hidden min-w-[200px] z-50">
-                <ListBox className="p-1">
-                  <ListBox.Item key="predicciones" id="predicciones" className="px-3 py-1.5 text-xs text-gh-text font-bold">PREDICCIONES</ListBox.Item>
-                  <ListBox.Item key="grupo_gestor" id="grupo_gestor" className="px-3 py-1.5 text-xs text-gh-text font-bold">MI GRUPO</ListBox.Item>
-                  <ListBox.Item key="resultados" id="resultados" className="px-3 py-1.5 text-xs text-gh-text font-bold">RESULTADOS REALES</ListBox.Item>
-                </ListBox>
-              </Select.Popover>
-            </Select>
-          </div>
+              <Tabs.Tab 
+                id="predicciones"
+                className="group max-w-full px-4 h-10 text-xs font-bold font-barlow tracking-wider uppercase cursor-pointer rounded-full"
+              >
+                <span className="flex items-center gap-1.5 group-data-[selected=true]:text-white text-gh-text-muted transition-colors duration-200">
+                  <Star size={14} /> PREDICCIONES
+                </span>
+                <Tabs.Indicator className="bg-wc-purple rounded-full shadow-md w-full h-full" />
+              </Tabs.Tab>
 
-          {/* Sticky Sidebar List (Desktop only) */}
-          <div className="hidden md:flex flex-col gap-1.5 bg-gh-bg-light border border-gh-border p-2.5 rounded-xl shadow-xs">
-            <button
-              onClick={() => setActiveAdminTab('predicciones')}
-              className={`w-full text-left px-3.5 py-2.5 rounded-lg text-xs font-black font-barlow tracking-wider uppercase flex items-center gap-2.5 transition-all border cursor-pointer ${
-                activeAdminTab === 'predicciones'
-                  ? 'bg-wc-red/10 border-wc-red text-wc-red'
-                  : 'bg-transparent border-transparent text-gh-text-muted hover:text-gh-text hover:bg-gh-bg-active'
-              }`}
-            >
-              <Star size={15} /> PREDICCIONES
-            </button>
+              <Tabs.Tab 
+                id="grupo_gestor"
+                className="group max-w-full px-4 h-10 text-xs font-bold font-barlow tracking-wider uppercase cursor-pointer rounded-full"
+              >
+                <span className="flex items-center gap-1.5 group-data-[selected=true]:text-white text-gh-text-muted transition-colors duration-200">
+                  <Users size={14} /> MI GRUPO
+                </span>
+                <Tabs.Indicator className="bg-wc-purple rounded-full shadow-md w-full h-full" />
+              </Tabs.Tab>
 
-            <button
-              onClick={() => setActiveAdminTab('grupo_gestor')}
-              className={`w-full text-left px-3.5 py-2.5 rounded-lg text-xs font-black font-barlow tracking-wider uppercase flex items-center gap-2.5 transition-all border cursor-pointer ${
-                activeAdminTab === 'grupo_gestor'
-                  ? 'bg-wc-red/10 border-wc-red text-wc-red'
-                  : 'bg-transparent border-transparent text-gh-text-muted hover:text-gh-text hover:bg-gh-bg-active'
-              }`}
-            >
-              <Users size={15} /> MI GRUPO
-            </button>
-            
-            <button
-              onClick={() => setActiveAdminTab('resultados')}
-              className={`w-full text-left px-3.5 py-2.5 rounded-lg text-xs font-black font-barlow tracking-wider uppercase flex items-center gap-2.5 transition-all border cursor-pointer ${
-                activeAdminTab === 'resultados'
-                  ? 'bg-wc-red/10 border-wc-red text-wc-red'
-                  : 'bg-transparent border-transparent text-gh-text-muted hover:text-gh-text hover:bg-gh-bg-active'
-              }`}
-            >
-              <Trophy size={15} /> RESULTADOS REALES
-            </button>
-          </div>
+              <Tabs.Tab 
+                id="resultados"
+                className="group max-w-full px-4 h-10 text-xs font-bold font-barlow tracking-wider uppercase cursor-pointer rounded-full"
+              >
+                <span className="flex items-center gap-1.5 group-data-[selected=true]:text-white text-gh-text-muted transition-colors duration-200">
+                  <Trophy size={14} /> RESULTADOS REALES
+                </span>
+                <Tabs.Indicator className="bg-wc-purple rounded-full shadow-md w-full h-full" />
+              </Tabs.Tab>
+            </Tabs.List>
+          </Tabs.ListContainer>
+        </Tabs>
+      </div>
 
-        </div>
-
+      <div className="w-full">
         {/* CONTENT PANEL AREA */}
-        <div className="lg:col-span-4">
+        <div className="w-full">
           {activeAdminTab === 'predicciones' && (
             <MemberDashboard
               partidos={partidos}
@@ -175,6 +154,8 @@ export default function GestorDashboard({
               tablaPosiciones={tablaPosiciones}
               currentUser={currentUser}
               onSavePrediction={onSavePrediction}
+              usuariosList={usuariosList}
+              allPredicciones={allPredicciones}
             />
           )}
 
@@ -244,17 +225,35 @@ export default function GestorDashboard({
                           <div className="flex items-center gap-2">
                             {/* Goles Local */}
                             <label htmlFor={`goles-local-${partido.id}`} className="sr-only">Goles Local</label>
-                            <Input id={`goles-local-${partido.id}`} type="number" min="0" disabled={rEdit.cerrado} value={rEdit.goles_local} onChange={(e) => {
-                              const val = e.target.value === '' ? '' : parseInt(e.target.value);
-                              setResultadoEdicion({ ...resultadoEdicion, [partido.id]: { ...rEdit, goles_local: val } });
-                            }} placeholder="-" className="w-12 h-10 text-center text-lg font-bold rounded-lg" />
+                            <input
+                              id={`goles-local-${partido.id}`}
+                              type="number"
+                              min="0"
+                              disabled={rEdit.cerrado}
+                              value={rEdit.goles_local}
+                              onChange={(e) => {
+                                const val = e.target.value === '' ? '' : parseInt(e.target.value);
+                                setResultadoEdicion({ ...resultadoEdicion, [partido.id]: { ...rEdit, goles_local: val } });
+                              }}
+                              placeholder="-"
+                              className="w-12 h-10 text-center text-lg font-bold rounded-lg border border-gh-border bg-gh-bg-light text-gh-text focus:outline-none focus:border-wc-purple transition-all"
+                            />
                             <span className="text-gh-text-muted font-bold">-</span>
                             {/* Goles Visita */}
                             <label htmlFor={`goles-visita-${partido.id}`} className="sr-only">Goles Visita</label>
-                            <Input id={`goles-visita-${partido.id}`} type="number" min="0" disabled={rEdit.cerrado} value={rEdit.goles_visita} onChange={(e) => {
-                              const val = e.target.value === '' ? '' : parseInt(e.target.value);
-                              setResultadoEdicion({ ...resultadoEdicion, [partido.id]: { ...rEdit, goles_visita: val } });
-                            }} placeholder="-" className="w-12 h-10 text-center text-lg font-bold rounded-lg" />
+                            <input
+                              id={`goles-visita-${partido.id}`}
+                              type="number"
+                              min="0"
+                              disabled={rEdit.cerrado}
+                              value={rEdit.goles_visita}
+                              onChange={(e) => {
+                                const val = e.target.value === '' ? '' : parseInt(e.target.value);
+                                setResultadoEdicion({ ...resultadoEdicion, [partido.id]: { ...rEdit, goles_visita: val } });
+                              }}
+                              placeholder="-"
+                              className="w-12 h-10 text-center text-lg font-bold rounded-lg border border-gh-border bg-gh-bg-light text-gh-text focus:outline-none focus:border-wc-purple transition-all"
+                            />
                           </div>
                           
                           {/* Dropdown Ganador */}

@@ -20,8 +20,12 @@ CREATE TABLE IF NOT EXISTS usuarios (
     grupo_id UUID REFERENCES grupos(id) ON DELETE SET NULL,
     es_admin BOOLEAN DEFAULT false, -- Gestor único por familia
     es_master BOOLEAN DEFAULT false, -- Administrador supremo
+    suspendido BOOLEAN DEFAULT false, -- Suspender miembro de grupo
     created_at TIMESTAMPTZ DEFAULT now()
 );
+
+-- Alter table statement for existing databases to prevent migration crashes
+ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS suspendido BOOLEAN DEFAULT false;
 
 -- 3. Tabla de Resultados Oficiales
 -- El admin/gestor registra el marcador real aquí. Aplica globalmente.

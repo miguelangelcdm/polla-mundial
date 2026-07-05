@@ -8,14 +8,14 @@ export default function Leaderboard({ tablaPosiciones, currentUserId }) {
 
   // Arrange top 3 for podium display: [2nd, 1st, 3rd]
   const podiumUsers = [];
-  if (top3[1]) podiumUsers.push({ ...top3[1], place: 2, medal: '🥈', color: 'border-slate-400/30 bg-slate-400/5 text-slate-300', height: 'h-28' }); // 2nd
-  if (top3[0]) podiumUsers.push({ ...top3[0], place: 1, medal: '🥇', color: 'border-wc-yellow/40 bg-wc-yellow/10 text-wc-yellow shadow-[0_0_15px_rgba(251,197,49,0.1)]', height: 'h-32 z-10' }); // 1st
-  if (top3[2]) podiumUsers.push({ ...top3[2], place: 3, medal: '🥉', color: 'border-amber-700/30 bg-amber-700/5 text-amber-600', height: 'h-24' }); // 3rd
+  if (top3[1]) podiumUsers.push({ ...top3[1], place: 2, medal: '🥈', color: 'border-slate-400/35 bg-slate-400/10 dark:bg-slate-400/5 text-slate-700 dark:text-slate-300', height: 'h-28' }); // 2nd
+  if (top3[0]) podiumUsers.push({ ...top3[0], place: 1, medal: '🥇', color: 'border-wc-yellow/45 bg-wc-yellow/15 dark:bg-wc-yellow/10 text-amber-700 dark:text-wc-yellow shadow-[0_0_15px_rgba(251,197,49,0.15)]', height: 'h-32 z-10' }); // 1st
+  if (top3[2]) podiumUsers.push({ ...top3[2], place: 3, medal: '🥉', color: 'border-amber-700/35 bg-amber-700/10 dark:bg-amber-700/5 text-amber-800 dark:text-amber-600', height: 'h-24' }); // 3rd
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between border-b border-gh-border pb-3">
-        <h2 className="text-2xl font-bold font-barlow text-white tracking-wider flex items-center gap-2">
+        <h2 className="text-2xl font-bold font-barlow text-gh-text tracking-wider flex items-center gap-2">
           <Trophy size={20} className="text-wc-yellow" />
           POSICIONES
         </h2>
@@ -23,16 +23,16 @@ export default function Leaderboard({ tablaPosiciones, currentUserId }) {
       </div>
 
       <Card className="overflow-hidden shadow-2xl transition-theme">
-        <div className="p-4 bg-[#0d1627]/60 border-b border-gh-border flex items-center justify-between">
-          <span className="text-xs font-bold text-white uppercase tracking-wider font-barlow">
-            Participantes ({tablaPosiciones.length})
+        <div className="p-4 bg-gh-bg-active/35 dark:bg-[#0d1627]/60 border-b border-gh-border flex items-center justify-between">
+          <span className="text-xs font-bold text-gh-text uppercase tracking-wider font-barlow">
+            Podio
           </span>
-          <span className="text-[10px] text-gh-text-muted uppercase">Puntos · Exactos</span>
+          {/* <span className="text-[10px] text-gh-text-muted uppercase">Puntos · Exactos</span> */}
         </div>
 
         {/* Podium section for Top 3 */}
         {tablaPosiciones.length > 0 && podiumUsers.length > 0 && (
-          <div className="flex items-end justify-center gap-2 sm:gap-4 pt-8 pb-5 bg-gradient-to-t from-black/10 to-transparent border-b border-gh-border/50 px-2 transition-theme">
+          <div className="flex items-end justify-center gap-2 sm:gap-4 pt-8 bg-gradient-to-t from-black/10 to-transparent border-b border-gh-border/50 px-2 transition-theme">
             {podiumUsers.map((usr) => {
               const esTu = usr.usuario_id === currentUserId;
               return (
@@ -41,28 +41,22 @@ export default function Leaderboard({ tablaPosiciones, currentUserId }) {
                   className={`w-[30%] max-w-[110px] rounded-t-2xl border flex flex-col items-center justify-end p-2 sm:p-3 text-center transition-all duration-300 relative ${usr.color} ${usr.height} hover:scale-[1.03]`}
                 >
                   {/* Medal Icon Badge */}
-                  <span className="absolute -top-3.5 left-1/2 -translate-x-1/2 text-xl drop-shadow-md select-none">
+                  <span className="absolute -top-5 left-1/2 -translate-x-1/2 text-2xl drop-shadow-md select-none z-20">
                     {usr.medal}
                   </span>
 
-                  {/* Avatar Circle */}
-                  <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-xs sm:text-sm font-black border ${
-                    esTu ? 'border-wc-green bg-wc-green/20 text-white' : 'border-gh-border bg-[#0d1627] text-gh-text-muted'
-                  }`}>
-                    {usr.nombre.substring(0, 2).toUpperCase()}
-                  </div>
+                  {esTu && (
+                    <span className="absolute top-2 right-2 px-1 py-0.5 bg-wc-green/20 border border-wc-green/45 rounded text-[7px] text-wc-green font-extrabold tracking-widest leading-none z-10">
+                      TÚ
+                    </span>
+                  )}
 
                   {/* Name */}
-                  <div className="mt-2 w-full">
+                  <div className="mt-1.5 w-full">
                     <div className="flex items-center justify-center gap-1 max-w-full">
-                      <p className="text-[10px] sm:text-xs font-bold text-white truncate max-w-[80%] leading-tight">
+                      <p className="text-[10px] sm:text-xs font-bold text-gh-text truncate max-w-full leading-tight">
                         {usr.nombre.split(' ')[0]}
                       </p>
-                      {esTu && (
-                        <span className="px-1 py-0.2 bg-wc-green/10 border border-wc-green/40 rounded-xs text-[7px] text-wc-green font-extrabold tracking-widest leading-none shrink-0">
-                          TÚ
-                        </span>
-                      )}
                     </div>
                     <p className="text-[8px] text-gh-text-muted font-mono leading-none mt-0.5">
                       @{usr.username}

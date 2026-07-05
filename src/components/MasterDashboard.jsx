@@ -80,6 +80,8 @@ export default function MasterDashboard({
   setNuevoGrupoNombre,
   onMasterCreateGroup,
   onToggleUserAdmin,
+  onSuspendUser,
+  onDeleteUser,
   onSaveResultado,
   onAbrirPartido,
   onConfirmarPartidoPendiente,
@@ -361,23 +363,54 @@ export default function MasterDashboard({
         ) : (
           usuariosList.map((user) => (
             <Table.Row key={user.id} className="hover:bg-gray-100 dark:hover:bg-white/5 transition-all">
-              <Table.Cell className="font-semibold text-gh-text">{user.nombre}</Table.Cell>
+              <Table.Cell className="font-semibold text-gh-text">
+                <div className="flex items-center gap-2">
+                  <span>{user.nombre}</span>
+                  {user.suspendido && (
+                    <span className="px-1.5 py-0.5 bg-wc-red/10 border border-wc-red/35 rounded text-[8px] text-wc-red font-black uppercase tracking-wider select-none animate-pulse">
+                      SUSPENDIDO
+                    </span>
+                  )}
+                </div>
+              </Table.Cell>
               <Table.Cell className="text-sm text-gray-600 dark:text-gray-400">@{user.username}</Table.Cell>
               <Table.Cell className="text-sm text-gray-600 dark:text-gray-400">
-                {user.grupo_nombre || <span className="text-gray-500">Ninguno (Pendiente)</span>}
+                {user.grupo_nombre || <span className="text-gray-500 font-medium italic">Ninguno (Pendiente)</span>}
               </Table.Cell>
               <Table.Cell className="text-sm text-gray-600 dark:text-gray-400">
-                {user.es_admin ? 'GESTOR' : 'MIEMBRO'}
+                <span className={`px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider select-none ${
+                  user.es_admin ? 'bg-wc-purple/10 border border-wc-purple/30 text-wc-purple' : 'bg-gh-bg-active border border-gh-border text-gh-text-muted'
+                }`}>
+                  {user.es_admin ? 'GESTOR' : 'MIEMBRO'}
+                </span>
               </Table.Cell>
               <Table.Cell>
-                <Button
-                  variant={user.es_admin ? 'outline' : 'default'}
-                  size="sm"
-                  onClick={() => onToggleUserAdmin(user.id, !user.es_admin)}
-                  className={`h-8 font-bold ${user.es_admin ? 'border-wc-red/40 text-wc-red hover:bg-wc-red/5' : ''}`}
-                >
-                  {user.es_admin ? 'Quitar Gestor' : 'Hacer Gestor'}
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant={user.es_admin ? 'outline' : 'default'}
+                    size="sm"
+                    onClick={() => onToggleUserAdmin(user.id, !user.es_admin)}
+                    className={`h-8 text-[11px] font-bold ${user.es_admin ? 'border-wc-red/40 text-wc-red hover:bg-wc-red/5' : ''}`}
+                  >
+                    {user.es_admin ? 'Quitar Gestor' : 'Hacer Gestor'}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => onSuspendUser(user.id, !user.suspendido)}
+                    className={`h-8 text-[11px] font-bold ${user.suspendido ? 'border-wc-green/45 text-wc-green hover:bg-wc-green/5' : 'border-wc-yellow/45 text-wc-yellow hover:bg-wc-yellow/5'}`}
+                  >
+                    {user.suspendido ? 'Activar' : 'Suspender'}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => onDeleteUser(user.id, user.nombre)}
+                    className="h-8 text-[11px] font-bold border-wc-red/40 text-wc-red hover:bg-wc-red/10"
+                  >
+                    Eliminar
+                  </Button>
+                </div>
               </Table.Cell>
             </Table.Row>
           ))

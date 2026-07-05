@@ -18,7 +18,7 @@ export default function AuthCard({
   toggleTheme
 }) {
   return (
-    <div className="min-h-screen lg:h-screen w-full flex flex-col lg:flex-row bg-gh-bg transition-all duration-300 relative overflow-y-auto lg:overflow-hidden lg:p-5 gap-6">
+    <div className="min-h-screen lg:h-screen w-full flex flex-col lg:flex-row bg-gh-bg transition-all duration-300 relative lg:overflow-hidden lg:p-5 gap-6">
       
       {/* Imagen de fondo difuminada en móviles como textura de agua (marca de agua limpia) */}
       <img 
@@ -120,7 +120,6 @@ export default function AuthCard({
                       <Input 
                         type="text" 
                         label="Usuario"
-                        labelPlacement="outside"
                         placeholder="Ej: migue"
                         value={loginForm.username}
                         onChange={(e) => setLoginForm({...loginForm, username: e.target.value})}
@@ -128,7 +127,6 @@ export default function AuthCard({
                       <Input 
                         type="password" 
                         label="Contraseña"
-                        labelPlacement="outside"
                         placeholder="••••••••"
                         value={loginForm.password}
                         onChange={(e) => setLoginForm({...loginForm, password: e.target.value})}
@@ -151,7 +149,6 @@ export default function AuthCard({
                         <Input 
                           type="text" 
                           label="Nombre"
-                          labelPlacement="outside"
                           placeholder="Ej: Miguel"
                           value={joinForm.nombre}
                           onChange={(e) => setJoinForm({...joinForm, nombre: e.target.value})}
@@ -159,7 +156,6 @@ export default function AuthCard({
                         <Input 
                           type="text" 
                           label="Apellido"
-                          labelPlacement="outside"
                           placeholder="Ej: Alejo"
                           value={joinForm.apellido}
                           onChange={(e) => setJoinForm({...joinForm, apellido: e.target.value})}
@@ -168,7 +164,6 @@ export default function AuthCard({
                       <Input 
                         type="password" 
                         label="Contraseña"
-                        labelPlacement="outside"
                         placeholder="••••••••"
                         value={joinForm.password}
                         onChange={(e) => setJoinForm({...joinForm, password: e.target.value})}

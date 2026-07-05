@@ -65,12 +65,12 @@
 }
 
 .dark {
-  /* DARK MODE (World Cup Theme) */
-  --bg-main: #020813;
-  --bg-dark: #01040a;
-  --bg-card: rgba(8, 17, 34, 0.45);
-  --bg-active: rgba(79, 70, 229, 0.15);
-  --border-color: rgba(255, 255, 255, 0.08);
+  /* DARK MODE (Soft Pastel-Navy World Cup Theme) */
+  --bg-main: #121324;
+  --bg-dark: #0a0b16;
+  --bg-card: rgba(22, 24, 46, 0.55);
+  --bg-active: rgba(99, 102, 241, 0.18);
+  --border-color: rgba(255, 255, 255, 0.07);
   --border-active: rgba(79, 70, 229, 0.4);
   --text-color: #f5f6f8;
   --text-muted: #95a5a6;
@@ -296,4 +296,15 @@ input {
 [data-sileo-canvas] svg *,
 [data-sileo-svg] * {
   fill: var(--sileo-fill) !important;
+}
+
+/* Layout height corrections */
+html, body, #root {
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+}
+#root {
+  display: flex;
+  flex-direction: column;
 }

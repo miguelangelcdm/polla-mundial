@@ -1,5 +1,5 @@
 import React from 'react';
-import { Trophy, User, LogOut, Sun, Moon } from 'lucide-react';
+import { Trophy, User, LogOut, Sun, Moon, Clock } from 'lucide-react';
 import { Button } from './ui/button';
 
 export default function Navbar({ 
@@ -14,9 +14,21 @@ export default function Navbar({
 }) {
   if (!currentUser) return null;
 
+  const [currentTime, setCurrentTime] = React.useState('');
+
+  React.useEffect(() => {
+    const updateTime = () => {
+      const now = new Date();
+      setCurrentTime(now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+    };
+    updateTime();
+    const interval = setInterval(updateTime, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
   return (
     <header className="sticky top-0 z-40 bg-gh-bg-light/80 backdrop-blur-md border-b border-gh-border transition-all duration-300 transition-theme">
-      <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+      <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
         {/* Logo y Nombre del grupo */}
         <div className="flex items-center gap-3">
           <div className="p-1.5 bg-wc-purple/10 border border-wc-purple/35 rounded-xl shadow-xs">
@@ -40,6 +52,12 @@ export default function Navbar({
 
         {/* Controles de Usuario */}
         <div className="flex items-center gap-4">
+          {/* Live System Clock */}
+          <div className="flex items-center gap-1.5 bg-[#0d1627]/5 border dark:bg-[#0d1627]/60 border-gh-border rounded-lg py-1 px-3 text-xs font-mono font-bold text-gh-text select-none">
+            <Clock size={13} className="text-wc-yellow animate-pulse" />
+            <span>{currentTime}</span>
+          </div>
+
           <div className="hidden md:flex items-center gap-2 bg-[#0d1627]/5 border dark:bg-[#0d1627]/60 border-gh-border rounded-lg py-1 px-3">
             <User size={13} className="text-wc-green" />
             <span className="text-xs text-gh-text font-medium">{currentUser.nombre}</span>

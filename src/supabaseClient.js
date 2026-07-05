@@ -239,6 +239,7 @@ export const db = {
       
       const user = usuarios.find(u => u.username.toLowerCase() === cleanUsername && u.password === password);
       if (!user) throw new Error("Usuario o contraseña incorrectos");
+      if (user.suspendido) throw new Error("Tu cuenta ha sido suspendida por el Administrador Supremo.");
       
       const grupo = grupos.find(g => g.id === user.grupo_id);
       return {
@@ -257,6 +258,7 @@ export const db = {
         
       if (error) throw new Error(error.message);
       if (!data) throw new Error("Usuario o contraseña incorrectos");
+      if (data.suspendido) throw new Error("Tu cuenta ha sido suspendida por el Administrador Supremo.");
       
       return {
         id: data.id,
@@ -265,6 +267,7 @@ export const db = {
         grupo_id: data.grupo_id,
         es_admin: data.es_admin,
         es_master: data.es_master,
+        suspendido: data.suspendido || false,
         grupo_nombre: data.grupos ? data.grupos.nombre : null,
         grupo_codigo: data.grupos ? data.grupos.codigo : null
       };
@@ -648,13 +651,14 @@ export const db = {
   // --- GESTIÓN DE MIEMBROS POR MASTER ---
   async getUsuarios() {
     if (clientState.isMock) {
-      const usuarios = getLocalData('pb_usuarios');
-      const grupos = getLocalData('pb_grupos');
+      const usuarios = getLocalData('pb_usuarios') || [];
+      const grupos = getLocalData('pb_grupos') || [];
       
       return usuarios.filter(u => !u.es_master).map(u => {
         const grupo = grupos.find(g => g.id === u.grupo_id);
         return {
           ...u,
+          suspendido: u.suspendido || false,
           grupo_nombre: grupo ? grupo.nombre : 'Sin grupo'
         };
       });
@@ -672,8 +676,50 @@ export const db = {
         username: u.username,
         grupo_id: u.grupo_id,
         es_admin: u.es_admin,
+        suspendido: u.suspendido || false,
         grupo_nombre: u.grupos ? u.grupos.nombre : 'Sin grupo'
       }));
+    }
+  },
+
+  async suspendUser(usuarioId, suspendido) {
+    if (clientState.isMock) {
+      const usuarios = getLocalData('pb_usuarios') || [];
+      const idx = usuarios.findIndex(u => u.id === usuarioId);
+      if (idx !== -1) {
+        usuarios[idx].suspendido = suspendido;
+        saveLocalData('pb_usuarios', usuarios);
+      }
+    } else {
+      const { error } = await supabase
+        .from('usuarios')
+        .update({ suspendido })
+        .eq('id', usuarioId);
+      if (error) throw new Error(error.message);
+    }
+  },
+
+  async deleteUser(usuarioId) {
+    if (clientState.isMock) {
+      let predicciones = getLocalData('pb_predicciones') || [];
+      predicciones = predicciones.filter(p => p.usuario_id !== usuarioId);
+      saveLocalData('pb_predicciones', predicciones);
+
+      const usuarios = getLocalData('pb_usuarios') || [];
+      const filtered = usuarios.filter(u => u.id !== usuarioId);
+      saveLocalData('pb_usuarios', filtered);
+    } else {
+      const { error: predError } = await supabase
+        .from('predicciones')
+        .delete()
+        .eq('usuario_id', usuarioId);
+      if (predError) throw new Error(predError.message);
+
+      const { error } = await supabase
+        .from('usuarios')
+        .delete()
+        .eq('id', usuarioId);
+      if (error) throw new Error(error.message);
     }
   },
 

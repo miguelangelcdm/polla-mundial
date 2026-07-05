@@ -147,10 +147,11 @@ export default function App() {
       }
       
       const cachedUser = localStorage.getItem('pb_session_user');
-      if (cachedUser) {
+      const cachedPass = localStorage.getItem('pb_session_pass');
+      if (cachedUser && cachedPass) {
         const u = JSON.parse(cachedUser);
         try {
-          const freshUser = await db.login(u.username, u.password);
+          const freshUser = await db.login(u.username, cachedPass);
           localStorage.setItem('pb_session_user', JSON.stringify(freshUser));
           if (freshUser.es_master) {
             setActiveTab('master');
@@ -166,6 +167,7 @@ export default function App() {
           await cargarDatosApp(freshUser);
         } catch (e) {
           localStorage.removeItem('pb_session_user');
+          localStorage.removeItem('pb_session_pass');
         }
       }
       setLoading(false);
@@ -190,6 +192,7 @@ export default function App() {
       const u = await db.login(loginForm.username, loginForm.password);
       setCurrentUser(u);
       localStorage.setItem('pb_session_user', JSON.stringify(u));
+      localStorage.setItem('pb_session_pass', loginForm.password);
       sileo.success({ title: `¡Bienvenido de nuevo, ${u.nombre}!` });
       // Pass fresh user directly to avoid stale closure
       await cargarDatosApp(u);
@@ -269,6 +272,7 @@ export default function App() {
 
       setCurrentUser(u);
       localStorage.setItem('pb_session_user', JSON.stringify(u));
+      localStorage.setItem('pb_session_pass', password);
       sileo.success({ 
         title: "¡Cuenta creada correctamente!", 
         description: `Tu usuario asignado es: "${username}". Guárdalo para volver a ingresar.` 
@@ -329,6 +333,7 @@ export default function App() {
   const handleLogout = () => {
     setCurrentUser(null);
     localStorage.removeItem('pb_session_user');
+    localStorage.removeItem('pb_session_pass');
     setLoginForm({ username: '', password: '' });
     setJoinForm({ nombre: '', username: '', password: '', codigoGrupo: '' });
     setCreateForm({ nombre: '', username: '', password: '', nombreGrupo: '' });
@@ -465,6 +470,37 @@ export default function App() {
     }
   };
 
+  // Suspender / Activar usuario (Master)
+  const handleSuspendUser = async (usuarioId, suspendido) => {
+    setLoading(true);
+    try {
+      await db.suspendUser(usuarioId, suspendido);
+      sileo.success({ title: suspendido ? "Usuario suspendido correctamente" : "Usuario activado correctamente" });
+      await cargarDatosApp();
+    } catch (err) {
+      sileo.error({ title: "Error al suspender/activar usuario", description: err.message });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Eliminar usuario (Master)
+  const handleDeleteUser = async (usuarioId, nombre) => {
+    if (!window.confirm(`¿Estás seguro de que deseas eliminar permanentemente al miembro "${nombre}"? Se borrarán todos sus pronósticos y perfil.`)) {
+      return;
+    }
+    setLoading(true);
+    try {
+      await db.deleteUser(usuarioId);
+      sileo.success({ title: `Miembro "${nombre}" eliminado con éxito` });
+      await cargarDatosApp();
+    } catch (err) {
+      sileo.error({ title: "Error al eliminar miembro", description: err.message });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Confirmar Partido F, G, H con nombres reales (Admin / Master)
   const handleConfirmarPartidoPendiente = async (partidoId, local, visita) => {
     if (!local || !visita) {
@@ -564,7 +600,7 @@ export default function App() {
   }
 
   return (
-    <div className={`min-h-screen flex flex-col relative overflow-x-clip bg-gh-bg-dark text-gh-text transition-colors duration-250 ${!currentUser ? 'lg:h-screen lg:overflow-hidden' : ''}`}>
+    <div className={`pb-18 min-h-screen min-w-screen flex-1 flex flex-col overflow-x-clip bg-gh-bg-dark text-gh-text transition-colors duration-250 ${!currentUser ? 'lg:h-screen lg:overflow-hidden' : ''}`}>
       {/* Background Aura Spots (Solo visibles en Dark Mode) */}
       {theme === 'dark' && (
         <>
@@ -607,7 +643,7 @@ export default function App() {
           />
 
           {/* CUERPO PRINCIPAL */}
-          <main className="flex-1 max-w-6xl w-full mx-auto px-4 py-6 pb-24 md:pb-12 z-10 relative">
+          <main className="max-w-7xl w-full mx-auto px-4 pt-6 z-10 relative">
             
             {/* BANNER MODO LOCAL (DEMO) */}
             {isDemoMode && (
@@ -715,6 +751,8 @@ export default function App() {
                     tablaPosiciones={tablaPosiciones}
                     currentUser={currentUser}
                     onSavePrediction={handleSaveSinglePrediction}
+                    usuariosList={usuariosList}
+                    allPredicciones={allPredicciones}
                   />
                 )}
 
@@ -736,6 +774,7 @@ export default function App() {
                     resultados={resultados}
                     tablaPosiciones={tablaPosiciones}
                     onSavePrediction={handleSaveSinglePrediction}
+                    allPredicciones={allPredicciones}
                   />
                 )}
 
@@ -755,6 +794,8 @@ export default function App() {
                     setNuevoGrupoNombre={setNuevoGrupoNombre}
                     onMasterCreateGroup={handleMasterCreateGroup}
                     onToggleUserAdmin={handleToggleUserAdmin}
+                    onSuspendUser={handleSuspendUser}
+                    onDeleteUser={handleDeleteUser}
                     onSaveResultado={handleSaveResultado}
                     onAbrirPartido={handleAbrirPartido}
                     onConfirmarPartidoPendiente={handleConfirmarPartidoPendiente}
@@ -781,9 +822,17 @@ export default function App() {
 
       {/* FOOTER GENERAL (Solo se muestra si el usuario está logueado para no empujar la pantalla del login) */}
       {currentUser && (
-        <footer className="py-4 border-t border-gh-border text-center text-[10px] text-gh-text-muted bg-[#f1f5f9] dark:bg-[#010409] mt-auto hidden md:block z-10 relative">
-          <p>© 2026 Copa Mundial de la FIFA - Octavos de Final · Creado para Pair Programming</p>
-        </footer>
+        <>
+          {/* Desktop Fixed Footer */}
+          <footer className="fixed bottom-0 left-0 right-0 py-4 border-t border-gh-border text-center text-[10px] text-gh-text-muted bg-gh-bg-dark/80 backdrop-blur-md hidden md:block z-30">
+            <p>© Polla 2026 Copa Mundial de la FIFA  · Creado por <a className="hover:text-wc-blue" href="https://www.linkedin.com/in/miguelangel-garay-b15178195/" target="_blank" rel="noopener noreferrer">Miguel Garay</a></p>
+          </footer>
+
+          {/* Mobile Static Footer (con padding-bottom para quedar sobre el MobileNav al hacer scroll) */}
+          <footer className="py-2 text-center text-[10px] text-gh-text-muted md:hidden z-10 mt-2">
+            <p>© Polla 2026 Copa Mundial de la FIFA  · Creado por <a className="hover:text-wc-blue" href="https://www.linkedin.com/in/miguelangel-garay-b15178195/" target="_blank" rel="noopener noreferrer">Miguel Garay</a></p>
+          </footer>
+        </>
       )}
     </div>
   );
