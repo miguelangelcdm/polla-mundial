@@ -179,3 +179,8 @@ Para garantizar que los administradores no pierdan los valores seleccionados de 
    - Se reemplazaron **todos los selectores del sistema** (selector de ganador en partidos jugados, selector de local/visita en partidos por confirmar, selector móvil de pestañas, y selectores de familias en logs y puntuaciones) por elementos nativos HTML `<select>` estilizados con CSS y variables modernas.
    - Esto erradica por completo la pérdida de valores debido a la desestructuración de los portales de React Aria cuando los dropdowns están cerrados al renderizar el componente.
    - La solución fue verificada mediante pruebas E2E con **Playwright** en Chromium, garantizando la persistencia e integridad de todo el flujo tras recargas y logueos.
+
+3. **Conversión de Zona Horaria Local Dinámica**:
+   - Se agregaron las marcas de tiempo ISO `kickoff` oficiales en formato UTC de la FIFA para los 16 encuentros de eliminación directa.
+   - En la consulta del fixture, se realiza una conversión en caliente al huso horario del dispositivo del cliente (ej. si el partido se juega a las 8:00 PM Eastern Time / 00:00 UTC, un usuario en huso horario UTC-5 lo verá correctamente agendado para su fecha y hora local: `5 Jul - 20:00 HS`, en lugar de mostrar horas genéricas o estáticas de un servidor centralizado).
+   - El validador de cierre de pronósticos en [src/components/MemberDashboard.jsx](file:///c:/Users/migue/Documents/Projects/pollon-alejos/src/components/MemberDashboard.jsx) compara en tiempo real el reloj del cliente con este timestamp UTC para bloquear las predicciones exactamente al sonar el pitazo inicial de cada partido.

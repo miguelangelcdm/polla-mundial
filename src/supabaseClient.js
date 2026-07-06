@@ -21,6 +21,23 @@ export const clientState = {
 };
 
 // Partidos base de Octavos
+// Format kickoff UTC string to user's local device timezone
+export const formatMatchDateTime = (kickoffStr) => {
+  if (!kickoffStr) return { fecha: '', hora: '' };
+  const d = new Date(kickoffStr);
+  if (isNaN(d.getTime())) return { fecha: '', hora: '' };
+  
+  const meses = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const mesesSp = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+  const fecha = `${d.getDate()} ${mesesSp[d.getMonth()]}`;
+  
+  const hrs = String(d.getHours()).padStart(2, '0');
+  const mins = String(d.getMinutes()).padStart(2, '0');
+  const hora = `${hrs}:${mins} HS`;
+  
+  return { fecha, hora };
+};
+
 // Clean team names helper to ensure full compatibility
 export const cleanTeamName = (name) => {
   if (!name) return '';
@@ -31,30 +48,30 @@ export const cleanTeamName = (name) => {
 };
 
 export const PARTIDOS_BASE = [
-  { id: 'octavo_a', fecha: '4 Jul', hora: '16:00 HS', sede: 'Philadelphia Stadium (Lincoln Financial Field)', ciudad: 'Filadelfia, Pensilvania', pais: 'Estados Unidos', local: 'Francia', visita: 'Paraguay', confirmado: true },
-  { id: 'octavo_b', fecha: '4 Jul', hora: '20:00 HS', sede: 'Houston Stadium (NRG Stadium)', ciudad: 'Houston, Texas', pais: 'Estados Unidos', local: 'Canadá', visita: 'Marruecos', confirmado: true },
-  { id: 'octavo_c', fecha: '5 Jul', hora: '18:00 HS', sede: 'New York/New Jersey Stadium (MetLife Stadium)', ciudad: 'East Rutherford, Nueva Jersey', pais: 'Estados Unidos', local: 'Brasil', visita: 'Noruega', confirmado: true },
-  { id: 'octavo_d', fecha: '6 Jul', hora: '17:00 HS', sede: 'Mexico City Stadium (Estadio Azteca)', ciudad: 'Ciudad de México', pais: 'México', local: 'México', visita: 'Inglaterra', confirmado: true },
-  { id: 'octavo_e', fecha: '6 Jul', hora: '21:00 HS', sede: 'Dallas Stadium (AT&T Stadium)', ciudad: 'Arlington, Texas', pais: 'Estados Unidos', local: 'España', visita: 'Portugal', confirmado: true },
-  { id: 'octavo_f', fecha: '7 Jul', hora: '15:00 HS', sede: 'Seattle Stadium (Lumen Field)', ciudad: 'Seattle, Washington', pais: 'Estados Unidos', local: 'Bélgica', visita: 'USA', confirmado: true },
-  { id: 'octavo_g', fecha: '7 Jul', hora: '19:00 HS', sede: 'Atlanta Stadium (Mercedes-Benz Stadium)', ciudad: 'Atlanta, Georgia', pais: 'Estados Unidos', local: 'Argentina', visita: 'Egipto', confirmado: true },
-  { id: 'octavo_h', fecha: '7 Jul', hora: '22:00 HS', sede: 'Vancouver Stadium (BC Place)', ciudad: 'Vancouver, Columbia Británica', pais: 'Canadá', local: 'Suiza', visita: 'Colombia', confirmado: true },
+  { id: 'octavo_a', fecha: '4 Jul', hora: '17:00 HS', kickoff: '2026-07-04T21:00:00Z', sede: 'Philadelphia Stadium (Lincoln Financial Field)', ciudad: 'Filadelfia, Pensilvania', pais: 'Estados Unidos', local: 'Francia', visita: 'Paraguay', confirmado: true },
+  { id: 'octavo_b', fecha: '4 Jul', hora: '13:00 HS', kickoff: '2026-07-04T17:00:00Z', sede: 'Houston Stadium (NRG Stadium)', ciudad: 'Houston, Texas', pais: 'Estados Unidos', local: 'Canadá', visita: 'Marruecos', confirmado: true },
+  { id: 'octavo_c', fecha: '5 Jul', hora: '16:00 HS', kickoff: '2026-07-05T20:00:00Z', sede: 'New York/New Jersey Stadium (MetLife Stadium)', ciudad: 'East Rutherford, Nueva Jersey', pais: 'Estados Unidos', local: 'Brasil', visita: 'Noruega', confirmado: true },
+  { id: 'octavo_d', fecha: '5 Jul', hora: '20:00 HS', kickoff: '2026-07-06T00:00:00Z', sede: 'Mexico City Stadium (Estadio Azteca)', ciudad: 'Ciudad de México', pais: 'México', local: 'México', visita: 'Inglaterra', confirmado: true },
+  { id: 'octavo_e', fecha: '6 Jul', hora: '15:00 HS', kickoff: '2026-07-06T19:00:00Z', sede: 'Dallas Stadium (AT&T Stadium)', ciudad: 'Arlington, Texas', pais: 'Estados Unidos', local: 'España', visita: 'Portugal', confirmado: true },
+  { id: 'octavo_f', fecha: '6 Jul', hora: '20:00 HS', kickoff: '2026-07-07T00:00:00Z', sede: 'Seattle Stadium (Lumen Field)', ciudad: 'Seattle, Washington', pais: 'Estados Unidos', local: 'Bélgica', visita: 'USA', confirmado: true },
+  { id: 'octavo_g', fecha: '7 Jul', hora: '13:00 HS', kickoff: '2026-07-07T17:00:00Z', sede: 'Atlanta Stadium (Mercedes-Benz Stadium)', ciudad: 'Atlanta, Georgia', pais: 'Estados Unidos', local: 'Argentina', visita: 'Egipto', confirmado: true },
+  { id: 'octavo_h', fecha: '7 Jul', hora: '17:00 HS', kickoff: '2026-07-07T21:00:00Z', sede: 'Vancouver Stadium (BC Place)', ciudad: 'Vancouver, Columbia Británica', pais: 'Canadá', local: 'Suiza', visita: 'Colombia', confirmado: true },
   
   // Cuartos de Final
-  { id: 'cuartos_a', fecha: '9 Jul', hora: '18:00 HS', sede: 'Boston Stadium (Foxborough Stadium)', ciudad: 'Foxborough, Massachusetts', pais: 'Estados Unidos', local: 'Ganador Octavos A', visita: 'Ganador Octavos B', confirmado: false },
-  { id: 'cuartos_b', fecha: '10 Jul', hora: '20:00 HS', sede: 'Los Angeles Stadium (SoFi Stadium)', ciudad: 'Inglewood, California', pais: 'Estados Unidos', local: 'Ganador Octavos C', visita: 'Ganador Octavos D', confirmado: false },
-  { id: 'cuartos_c', fecha: '11 Jul', hora: '17:00 HS', sede: 'Miami Stadium (Hard Rock Stadium)', ciudad: 'Miami Gardens, Florida', pais: 'Estados Unidos', local: 'Ganador Octavos E', visita: 'Ganador Octavos F', confirmado: false },
-  { id: 'cuartos_d', fecha: '12 Jul', hora: '19:00 HS', sede: 'Kansas City Stadium (Arrowhead Stadium)', ciudad: 'Kansas City, Missouri', pais: 'Estados Unidos', local: 'Ganador Octavos G', visita: 'Ganador Octavos H', confirmado: false },
+  { id: 'cuartos_a', fecha: '9 Jul', hora: '21:00 HS', kickoff: '2026-07-10T01:00:00Z', sede: 'Boston Stadium (Foxborough Stadium)', ciudad: 'Foxborough, Massachusetts', pais: 'Estados Unidos', local: 'Ganador Octavos A', visita: 'Ganador Octavos B', confirmado: false },
+  { id: 'cuartos_b', fecha: '10 Jul', hora: '20:00 HS', kickoff: '2026-07-11T00:00:00Z', sede: 'Los Angeles Stadium (SoFi Stadium)', ciudad: 'Inglewood, California', pais: 'Estados Unidos', local: 'Ganador Octavos C', visita: 'Ganador Octavos D', confirmado: false },
+  { id: 'cuartos_c', fecha: '11 Jul', hora: '22:00 HS', kickoff: '2026-07-12T02:00:00Z', sede: 'Miami Stadium (Hard Rock Stadium)', ciudad: 'Miami Gardens, Florida', pais: 'Estados Unidos', local: 'Ganador Octavos E', visita: 'Ganador Octavos F', confirmado: false },
+  { id: 'cuartos_d', fecha: '12 Jul', hora: '14:00 HS', kickoff: '2026-07-12T18:00:00Z', sede: 'Kansas City Stadium (Arrowhead Stadium)', ciudad: 'Kansas City, Missouri', pais: 'Estados Unidos', local: 'Ganador Octavos G', visita: 'Ganador Octavos H', confirmado: false },
   
   // Semifinales
-  { id: 'semi_a', fecha: '14 Jul', hora: '20:00 HS', sede: 'Dallas Stadium (AT&T Stadium)', ciudad: 'Arlington, Texas', pais: 'Estados Unidos', local: 'Ganador Cuartos A', visita: 'Ganador Cuartos B', confirmado: false },
-  { id: 'semi_b', fecha: '15 Jul', hora: '20:00 HS', sede: 'Atlanta Stadium (Mercedes-Benz Stadium)', ciudad: 'Atlanta, Georgia', pais: 'Estados Unidos', local: 'Ganador Cuartos C', visita: 'Ganador Cuartos D', confirmado: false },
+  { id: 'semi_a', fecha: '14 Jul', hora: '15:00 HS', kickoff: '2026-07-14T19:00:00Z', sede: 'Dallas Stadium (AT&T Stadium)', ciudad: 'Arlington, Texas', pais: 'Estados Unidos', local: 'Ganador Cuartos A', visita: 'Ganador Cuartos B', confirmado: false },
+  { id: 'semi_b', fecha: '15 Jul', hora: '15:00 HS', kickoff: '2026-07-15T19:00:00Z', sede: 'Atlanta Stadium (Mercedes-Benz Stadium)', ciudad: 'Atlanta, Georgia', pais: 'Estados Unidos', local: 'Ganador Cuartos C', visita: 'Ganador Cuartos D', confirmado: false },
   
   // Tercer Puesto
-  { id: 'tercer_puesto', fecha: '18 Jul', hora: '16:00 HS', sede: 'Miami Stadium (Hard Rock Stadium)', ciudad: 'Miami Gardens, Florida', pais: 'Estados Unidos', local: 'Perdedor Semifinal A', visita: 'Perdedor Semifinal B', confirmado: false },
+  { id: 'tercer_puesto', fecha: '18 Jul', hora: '17:00 HS', kickoff: '2026-07-18T21:00:00Z', sede: 'Miami Stadium (Hard Rock Stadium)', ciudad: 'Miami Gardens, Florida', pais: 'Estados Unidos', local: 'Perdedor Semifinal A', visita: 'Perdedor Semifinal B', confirmado: false },
   
   // Final
-  { id: 'final', fecha: '19 Jul', hora: '19:00 HS', sede: 'New York/New Jersey Stadium (MetLife Stadium)', ciudad: 'East Rutherford, Nueva Jersey', pais: 'Estados Unidos', local: 'Ganador Semifinal A', visita: 'Ganador Semifinal B', confirmado: false },
+  { id: 'final', fecha: '19 Jul', hora: '15:00 HS', kickoff: '2026-07-19T19:00:00Z', sede: 'New York/New Jersey Stadium (MetLife Stadium)', ciudad: 'East Rutherford, Nueva Jersey', pais: 'Estados Unidos', local: 'Ganador Semifinal A', visita: 'Ganador Semifinal B', confirmado: false },
 ];
 
 export const resolverFixtureDinamico = (resultados) => {
@@ -891,11 +908,16 @@ export const db = {
 
       rawPartidos = resolverFixtureDinamico(resultadosMap);
     }
-    return rawPartidos.map(p => ({
-      ...p,
-      local: cleanTeamName(p.local),
-      visita: cleanTeamName(p.visita)
-    }));
+    return rawPartidos.map(p => {
+      const { fecha, hora } = formatMatchDateTime(p.kickoff);
+      return {
+        ...p,
+        local: cleanTeamName(p.local),
+        visita: cleanTeamName(p.visita),
+        fecha: fecha || p.fecha,
+        hora: hora || p.hora
+      };
+    });
   },
 
   async confirmarPartido(partidoId, localNombre, visitaNombre) {

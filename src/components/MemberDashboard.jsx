@@ -54,12 +54,15 @@ const getCountryInitials = (teamName) => {
   return cleanName.substring(0, 3);
 };
 
-const parseMatchDateTime = (fechaStr, horaStr) => {
+const parseMatchDateTime = (match) => {
+  if (!match) return null;
+  if (match.kickoff) return new Date(match.kickoff);
+  const fechaStr = match.fecha;
+  const horaStr = match.hora;
   if (!fechaStr) return null;
   const dia = parseInt(fechaStr.split(' ')[0]);
   const horaClean = (horaStr || '18:00 HS').replace(' HS', '').trim();
   const [hrs, mins] = horaClean.split(':').map(Number);
-  // Julio 2026 (index del mes es 6)
   return new Date(2026, 6, dia, hrs, mins, 0);
 };
 
@@ -95,7 +98,7 @@ export default function MemberDashboard({
     const now = new Date();
     // Encontrar el primer partido en el futuro que no esté cerrado en la base de datos
     const match = partidos.find((p) => {
-      const kickoff = parseMatchDateTime(p.fecha, p.hora);
+      const kickoff = parseMatchDateTime(p);
       return kickoff && now < kickoff && !resultados[p.id]?.cerrado;
     });
 
@@ -132,7 +135,7 @@ export default function MemberDashboard({
     if (resOficial?.cerrado) return true;
     if (!selectedMatch) return false;
 
-    const kickoffDate = parseMatchDateTime(selectedMatch.fecha, selectedMatch.hora);
+    const kickoffDate = parseMatchDateTime(selectedMatch);
     if (!kickoffDate) return false;
 
     return new Date() >= kickoffDate;
@@ -147,7 +150,7 @@ export default function MemberDashboard({
       return;
     }
 
-    const targetDate = parseMatchDateTime(selectedMatch.fecha, selectedMatch.hora);
+    const targetDate = parseMatchDateTime(selectedMatch);
     if (!targetDate) {
       setTimeLeft('');
       return;
@@ -350,7 +353,7 @@ export default function MemberDashboard({
                   </div>
 
                   {(() => {
-                    const kickoffDate = parseMatchDateTime(proximoPartido.fecha, proximoPartido.hora);
+                    const kickoffDate = parseMatchDateTime(proximoPartido);
                     const hasStarted = kickoffDate && new Date() >= kickoffDate;
 
                     if (hasStarted) {
@@ -409,7 +412,7 @@ export default function MemberDashboard({
                     <ListBox className="p-1 max-h-48 overflow-y-auto">
                       {partidos
                         .filter((p) => {
-                          const kickoffDate = parseMatchDateTime(p.fecha, p.hora);
+                          const kickoffDate = parseMatchDateTime(p);
                           const hasPassed = kickoffDate && new Date() >= kickoffDate;
                           return !resultados[p.id]?.cerrado && !hasPassed;
                         })
